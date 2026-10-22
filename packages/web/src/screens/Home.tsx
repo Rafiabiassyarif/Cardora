@@ -15,7 +15,6 @@ import {
   FriendsModal,
   BackupRestoreModal,
 } from '../components/gameModals';
-import { MobileCompileModal } from '../components/MobileCompileModal';
 import { AnimatedNumber } from '../components/effects';
 import {
   IconPlay, IconGrid, IconPlus, IconLogIn, IconGift, IconTarget, IconAward, IconTrophy, IconUsers,
@@ -59,7 +58,6 @@ export default function Home({ nav }: { nav: Nav }) {
   const [friendsOpen, setFriendsOpen] = useState(false);
   const [storeOpen, setStoreOpen] = useState(false);
   const [backupOpen, setBackupOpen] = useState(false);
-  const [compileOpen, setCompileOpen] = useState(false);
   const [code, setCode] = useState('');
 
   const s = statsFor(history);
@@ -78,7 +76,6 @@ export default function Home({ nav }: { nav: Nav }) {
   const quick = () => nav({ name: 'local', gameId: 'holdem', players: 4, options: {} });
 
   const activities = [
-    { key: 'compile', icon: <span style={{ fontSize: '1.25rem', lineHeight: 1 }}>📱</span>, tone: 'sky', title: 'Download & Pasang App', sub: 'APK Android & iPhone Ready', badge: 'Download APK', onClick: () => setCompileOpen(true) },
     { key: 'wheel', icon: <IconGift />, tone: 'terra', title: 'Roda Harian', sub: spinReady ? 'Siap diputar hari ini' : 'Sudah diputar · tunggu 12 jam', badge: spinReady ? 'Siap' : null, onClick: () => setWheelOpen(true) },
     { key: 'quest', icon: <IconTarget />, tone: 'sage', title: 'Misi Harian', sub: `${eco.quests.filter(q => q.completed).length}/${eco.quests.length} selesai`, badge: pendingQuests ? `${pendingQuests} hadiah` : null, onClick: () => setQuestsOpen(true) },
     { key: 'ach', icon: <IconAward />, tone: 'butter', title: 'Pencapaian', sub: `${eco.achievements.filter(a => a.unlocked).length}/${eco.achievements.length} terbuka`, badge: pendingAchievements ? `${pendingAchievements} baru` : null, onClick: () => setAchievementsOpen(true) },
@@ -98,14 +95,6 @@ export default function Home({ nav }: { nav: Nav }) {
         <div className="dash-nav-right">
           <WalletHeaderPill onOpenStore={() => setStoreOpen(true)} />
           <div className="dash-iconbar" role="group" aria-label="Pintasan">
-            <button 
-              className="dash-iconbtn" 
-              onClick={() => setCompileOpen(true)}
-              aria-label="Download & Pasang Aplikasi" 
-              title="📱 Download APK Android & Pasang di iPhone"
-            >
-              <span style={{ fontSize: 16 }}>📱</span>
-            </button>
             <button 
               className={`dash-iconbtn${isMusicPlaying ? ' is-on' : ''}`} 
               onClick={() => openMusicModal()}
@@ -153,14 +142,6 @@ export default function Home({ nav }: { nav: Nav }) {
                 </button>
                 <button className="btn btn-lg" onClick={() => nav({ name: 'catalog' })}>
                   <IconGrid size={18} /> Semua Game ({available.length})
-                </button>
-                <button 
-                  className="btn btn-lg" 
-                  onClick={() => setCompileOpen(true)}
-                  style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'var(--hair)' }}
-                  title="Compile project ke aplikasi Android (APK) atau iOS (IPA)"
-                >
-                  <span style={{ fontSize: 16 }}>📱</span> Compile ke HP
                 </button>
               </div>
             </div>
@@ -329,7 +310,6 @@ export default function Home({ nav }: { nav: Nav }) {
       {leaderboardOpen && <LeaderboardModal onClose={() => setLeaderboardOpen(false)} />}
       {storeOpen && <StoreModal onClose={() => setStoreOpen(false)} />}
       {backupOpen && <BackupRestoreModal onClose={() => setBackupOpen(false)} />}
-      {compileOpen && <MobileCompileModal onClose={() => setCompileOpen(false)} />}
     </div>
   );
 }

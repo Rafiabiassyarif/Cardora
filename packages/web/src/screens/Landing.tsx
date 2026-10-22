@@ -1,8 +1,9 @@
 // screens/Landing.tsx — halaman pembuka: kenalkan game, lalu Masuk / Daftar / Google / Tamu.
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { CATALOG } from '@kuypoker/engine';
 import type { Nav, Route } from '../App';
 import { GoogleButton } from '../components/GoogleButton';
+import { MobileCompileModal } from '../components/MobileCompileModal';
 import { continueAsGuest } from '../lib/auth';
 import { play } from '../lib/sound';
 import { IconLogIn, IconPlay, IconSparkles } from '../components/icons';
@@ -25,6 +26,9 @@ export default function Landing({ nav, next }: { nav: Nav; next?: Route }) {
   const games = CATALOG.filter(g => g.status === 'available');
   const goNext = () => nav(next ?? { name: 'home' });
   const guest = () => { play('click'); continueAsGuest(); goNext(); };
+  // Pasang app di HP (APK Android / iPhone) — dipindah dari beranda ke landing.
+  const [compileOpen, setCompileOpen] = useState(false);
+  const openCompile = () => { play('click'); setCompileOpen(true); };
 
   return (
     <div className="landing">
@@ -36,6 +40,9 @@ export default function Landing({ nav, next }: { nav: Nav; next?: Route }) {
           <span>Card<b>ora</b></span>
         </div>
         <div className="landing-nav-actions">
+          <button className="lbtn lbtn-ghost" onClick={openCompile} title="Download APK Android & pasang di iPhone">
+            📱 Pasang di HP
+          </button>
           <button className="lbtn lbtn-ghost" onClick={() => nav({ name: 'auth', mode: 'login', next })}>Masuk</button>
           <button className="lbtn lbtn-gold" onClick={() => nav({ name: 'auth', mode: 'register', next })}>Daftar</button>
         </div>
@@ -66,6 +73,9 @@ export default function Landing({ nav, next }: { nav: Nav; next?: Route }) {
               <div className="or-sep"><span>atau</span></div>
               <button className="lbtn lbtn-gold lbtn-lg lbtn-block" onClick={guest}>
                 <IconPlay size={18} /> Main sebagai Tamu
+              </button>
+              <button className="lbtn lbtn-ghost lbtn-block" onClick={openCompile} title="Download APK Android & pasang di iPhone">
+                📱 Pasang aplikasi di HP (APK / iPhone)
               </button>
               <p className="hero-note">Tamu: progres tersimpan di perangkat ini. Tautkan akun kapan saja agar aman.</p>
             </div>
@@ -131,6 +141,8 @@ export default function Landing({ nav, next }: { nav: Nav; next?: Route }) {
         <span>© {new Date().getFullYear()} Cardora</span>
         <span>Hanya hiburan — chip virtual tidak bisa ditukar uang.</span>
       </footer>
+
+      {compileOpen && <MobileCompileModal onClose={() => setCompileOpen(false)} />}
     </div>
   );
 }
