@@ -34,6 +34,10 @@ export interface CangkulanOptions {
   handSize: number;
   aceHigh: boolean;
   openWithDeck: boolean;
+  turnSeconds?: number;
+  passAndPlay?: boolean;
+  autoDrawAll?: boolean;
+  scoringPenalty?: 'card_count' | 'card_value';
 }
 
 interface TrickPlay { seat: number | null; card: Card }
@@ -76,11 +80,71 @@ export interface CangkulanView extends BaseView {
   aceHigh: boolean;
 }
 
-const DEFAULTS: CangkulanOptions = { handSize: 7, aceHigh: true, openWithDeck: true };
+const DEFAULTS: CangkulanOptions = {
+  handSize: 7,
+  aceHigh: true,
+  openWithDeck: true,
+  turnSeconds: 15,
+  passAndPlay: false,
+  autoDrawAll: false,
+  scoringPenalty: 'card_count',
+};
+
 const OPTIONS: OptionSpec[] = [
-  { key: 'handSize', label: 'Kartu per pemain', type: 'number', min: 5, max: 7, step: 1 },
-  { key: 'aceHigh', label: 'As tertinggi', type: 'boolean', help: 'Jika mati, As bernilai paling rendah' },
-  { key: 'openWithDeck', label: 'Trik pertama dibuka kartu dari tumpukan', type: 'boolean' },
+  { key: 'passAndPlay', label: 'Mode Operan HP (Multiplayer Lokal)', type: 'boolean', help: 'Tampilkan layar privasi serahkan HP sebelum giliran berikutnya' },
+  {
+    key: 'handSize',
+    label: 'Jumlah Kartu Awal per Pemain',
+    type: 'select',
+    choices: [
+      { value: 5, label: '5 Kartu (Permainan Cepat & Dinamis)' },
+      { value: 7, label: '7 Kartu (Standar Tradisional Cangkulan)' },
+    ],
+    help: 'Berapa lembar kartu yang dibagikan ke masing-masing pemain di awal permainan'
+  },
+  {
+    key: 'turnSeconds',
+    label: 'Batas Waktu Giliran',
+    type: 'select',
+    choices: [
+      { value: 10, label: '10 Detik (Kilat)' },
+      { value: 15, label: '15 Detik (Standar)' },
+      { value: 25, label: '25 Detik (Santai)' },
+    ],
+    help: 'Waktu berpikir sebelum sistem otomatis jalan atau nyangkul'
+  },
+  {
+    key: 'aceHigh',
+    label: 'Kekuatan Kartu As',
+    type: 'select',
+    choices: [
+      { value: 1, label: 'As Kartu Tertinggi (K < As)' },
+      { value: 0, label: 'As Kartu Terendah (As = 1 < 2)' },
+    ],
+    help: 'Menentukan apakah As memenangkan kartu Raja (K) atau menjadi kartu terkecil'
+  },
+  {
+    key: 'openWithDeck',
+    label: 'Trik Pertama Dibuka dari Tumpukan',
+    type: 'boolean',
+    help: 'Buka 1 kartu teratas tumpukan untuk menentukan jenis kembang trik pertama'
+  },
+  {
+    key: 'autoDrawAll',
+    label: 'Mode Nyangkul Cepat',
+    type: 'boolean',
+    help: 'Otomatis ambil kartu dari tumpukan cangkulan sekaligus sampai memperoleh jenis yang cocok'
+  },
+  {
+    key: 'scoringPenalty',
+    label: 'Sistem Penalti Poin Kalah',
+    type: 'select',
+    choices: [
+      { value: 'card_count', label: 'Hitung Lembar Kartu Sisa (1 Poin/Kartu)' },
+      { value: 'card_value', label: 'Hitung Nilai Angka Kartu (Gambar J/Q/K = 10 Poin)' },
+    ],
+    help: 'Metode penilaian skor penalti bagi pemain yang kartunya belum habis'
+  },
 ];
 
 const value = (s: CangkulanState, c: Card) => {
@@ -173,8 +237,12 @@ export const cangkulan: GameModule<CangkulanState, CangkulanAction, CangkulanVie
     const r = (raw ?? {}) as Partial<CangkulanOptions>;
     return {
       handSize: clampInt(r.handSize, 5, 7, 7),
-      aceHigh: r.aceHigh === undefined ? true : !!r.aceHigh,
+      aceHigh: r.aceHigh === undefined ? true : Boolean(Number(r.aceHigh) || r.aceHigh),
       openWithDeck: r.openWithDeck === undefined ? true : !!r.openWithDeck,
+      turnSeconds: typeof r.turnSeconds === 'number' ? clampInt(r.turnSeconds, 5, 60, 15) : 15,
+      passAndPlay: Boolean(r.passAndPlay),
+      autoDrawAll: Boolean(r.autoDrawAll),
+      scoringPenalty: r.scoringPenalty === 'card_value' ? 'card_value' : 'card_count',
     };
   },
 

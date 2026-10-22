@@ -92,6 +92,18 @@ export interface TongkronganOptions {
   round?: number;
   /** Kursi pemenang (Juara 1) dari ronde sebelumnya. */
   previousWinner?: number | null;
+  /** Aturan kartu 3 di awal: buang semua kartu 3 atau hanya pemegang 3 sekop. */
+  openingRule?: 'discard_all' | 'spade3_only';
+  /** Bom 4 angka sama dapat membalas kartu 2 tunggal dan reset ronde. */
+  allowBombReset?: boolean;
+  /** Dilarang menyisakan kartu 2/poker di akhir penutup (kalah ke-4). */
+  forbidPokerLast?: boolean;
+  /** Multiplier penalti poin kartu sisa di tangan yang kalah. */
+  penaltyMultiplier?: 'standard' | 'double_twos' | 'extreme';
+  /** Urutkan kartu otomatis dari kecil ke besar di tangan. */
+  autoSortHand?: boolean;
+  /** Beri sorotan visual rekomendasi kombinasi kartu yang sah. */
+  showHints?: boolean;
 }
 
 export interface TongkronganState {
@@ -182,11 +194,73 @@ const DEFAULTS: TongkronganOptions = {
   turnSeconds: 15,
   round: 1,
   previousWinner: null,
+  openingRule: 'discard_all',
+  allowBombReset: true,
+  forbidPokerLast: true,
+  penaltyMultiplier: 'standard',
+  autoSortHand: true,
+  showHints: true,
 };
 
 const OPTIONS: OptionSpec[] = [
   { key: 'passAndPlay', label: 'Mode Operan HP (4 Pemain Lokal)', type: 'boolean', help: 'Tampilkan layar privasi serahkan HP sebelum giliran berikutnya' },
-  { key: 'turnSeconds', label: 'Batas Waktu Giliran (detik)', type: 'number', min: 10, max: 30, step: 5 },
+  {
+    key: 'turnSeconds',
+    label: 'Batas Waktu Giliran',
+    type: 'select',
+    choices: [
+      { value: 10, label: '10 Detik (Kilat)' },
+      { value: 15, label: '15 Detik (Standar Tongkrongan)' },
+      { value: 20, label: '20 Detik (Santai)' },
+      { value: 30, label: '30 Detik (Mikir Panjang)' },
+    ],
+    help: 'Waktu berpikir tiap giliran sebelum otomatis skip atau jalan'
+  },
+  {
+    key: 'openingRule',
+    label: 'Aturan Kartu 3 di Ronde 1',
+    type: 'select',
+    choices: [
+      { value: 'discard_all', label: 'Wajib Buka Semua Kartu 3 (Rekomendasi Tongkrongan)' },
+      { value: 'spade3_only', label: 'Tradisional (Hanya Pemegang 3♠ Buka Meja)' },
+    ],
+    help: 'Cara penentuan giliran pertama saat pertandingan ronde 1 dimulai'
+  },
+  {
+    key: 'allowBombReset',
+    label: 'Bom 4 Angka Sama (Four of a Kind)',
+    type: 'boolean',
+    help: 'Kombinasi 4 kartu sama dapat membalas kartu 2 poker tunggal & me-reset ronde dari awal'
+  },
+  {
+    key: 'forbidPokerLast',
+    label: 'Larangan Kartu 2/Poker di Akhir',
+    type: 'boolean',
+    help: 'Kartu 2 (poker) dilarang dikeluarkan saat kartu tersisa 1-2 atau jadi kartu penutup (auto kalah ke-4)'
+  },
+  {
+    key: 'penaltyMultiplier',
+    label: 'Sistem Penalti Poin Kartu Sisa',
+    type: 'select',
+    choices: [
+      { value: 'standard', label: 'Standar (1 Poin per Kartu)' },
+      { value: 'double_twos', label: 'Kartu 2 Dihitung Dobel (x2 Poin Denda)' },
+      { value: 'extreme', label: 'Hangus (>10 Kartu Kena Denda Dobel)' },
+    ],
+    help: 'Aturan perhitungan poin denda kartu yang tersisa di tangan pemain yang kalah'
+  },
+  {
+    key: 'showHints',
+    label: 'Asisten Kombinasi (Smart Hint)',
+    type: 'boolean',
+    help: 'Sorot otomatis rekomendasi kombinasi kartu sah yang bisa melawan meja'
+  },
+  {
+    key: 'autoSortHand',
+    label: 'Urutkan Kartu Otomatis',
+    type: 'boolean',
+    help: 'Otomatis rapikan susunan kartu tangan dari terendah (3) hingga terkuat (2)'
+  },
 ];
 
 /**
@@ -507,6 +581,12 @@ export const tongkrongan: GameModule<TongkronganState, TongkronganAction, Tongkr
       turnSeconds: clampInt(r.turnSeconds, 10, 30, DEFAULTS.turnSeconds),
       round,
       previousWinner: prevWinner,
+      openingRule: r.openingRule === 'spade3_only' ? 'spade3_only' : 'discard_all',
+      allowBombReset: r.allowBombReset !== undefined ? Boolean(r.allowBombReset) : true,
+      forbidPokerLast: r.forbidPokerLast !== undefined ? Boolean(r.forbidPokerLast) : true,
+      penaltyMultiplier: r.penaltyMultiplier === 'double_twos' || r.penaltyMultiplier === 'extreme' ? r.penaltyMultiplier : 'standard',
+      autoSortHand: r.autoSortHand !== undefined ? Boolean(r.autoSortHand) : true,
+      showHints: r.showHints !== undefined ? Boolean(r.showHints) : true,
     };
   },
 

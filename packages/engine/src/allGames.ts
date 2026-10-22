@@ -15,6 +15,7 @@ import {
   type Difficulty, 
   type GameModule, 
   type LogEntry, 
+  type OptionSpec,
   type SeatInfo, 
   type SeatResult, 
   RuleError, 
@@ -74,6 +75,128 @@ export interface SimpleCardGameView extends BaseView {
   };
 }
 
+/** Hasilkan kumpulan opsi kaya yang spesifik untuk masing-masing genre game */
+function getOptionsForGameType(gameId: string, gameType: 'trick' | 'draw' | 'matching' | 'shedding' | 'points' | 'poker'): OptionSpec[] {
+  const commonOptions: OptionSpec[] = [
+    { key: 'passAndPlay', label: 'Mode Operan HP (Multiplayer Lokal)', type: 'boolean', help: 'Tampilkan layar privasi saat berganti giliran antar pemain fisik' },
+    {
+      key: 'turnSeconds',
+      label: 'Batas Waktu Giliran',
+      type: 'select',
+      choices: [
+        { value: 10, label: '10 Detik (Kilat)' },
+        { value: 15, label: '15 Detik (Standar)' },
+        { value: 25, label: '25 Detik (Santai)' },
+      ],
+      help: 'Waktu berpikir tiap giliran sebelum sistem otomatis beraksi'
+    },
+  ];
+
+  if (gameType === 'poker') {
+    return [
+      ...commonOptions,
+      {
+        key: 'startingStack',
+        label: 'Modal Chip Awal',
+        type: 'select',
+        choices: [
+          { value: 500, label: '500 Chip (Santai)' },
+          { value: 1000, label: '1.000 Chip (Standar)' },
+          { value: 2500, label: '2.500 Chip (Kompetitif)' },
+          { value: 5000, label: '5.000 Chip (High Roller)' },
+        ],
+        help: 'Jumlah chip awal setiap pemain di meja'
+      },
+      {
+        key: 'bigBlind',
+        label: 'Taruhan Big Blind',
+        type: 'select',
+        choices: [
+          { value: 10, label: '10 Chip' },
+          { value: 20, label: '20 Chip' },
+          { value: 50, label: '50 Chip' },
+        ],
+        help: 'Taruhan wajib minimal per tangan'
+      },
+      { key: 'showOdds', label: 'Kalkulator Peluang Kombinasi Kartu', type: 'boolean', help: 'Tampilkan analisis persentase kemenangan langsung di meja' },
+      { key: 'autoMuck', label: 'Auto-Muck (Sembunyikan Kartu Kalah)', type: 'boolean', help: 'Sembunyikan kartu tangan kalah saat showdown' },
+    ];
+  }
+
+  if (gameType === 'points') {
+    return [
+      ...commonOptions,
+      {
+        key: 'minBet',
+        label: 'Taruhan Meja Minimum',
+        type: 'select',
+        choices: [
+          { value: 10, label: '10 Chip' },
+          { value: 25, label: '25 Chip' },
+          { value: 50, label: '50 Chip' },
+          { value: 100, label: '100 Chip' },
+        ],
+        help: 'Taruhan minimal untuk setiap putaran'
+      },
+      { key: 'showRoadmap', label: 'Papan Skor & Riwayat Meja (Scoreboard)', type: 'boolean', help: 'Tampilkan diagram tren kemenangan kasino (Bead Plate)' },
+      { key: 'tiePush', label: 'Taruhan Seri Dikembalikan Utuh (Push)', type: 'boolean', help: 'Jika skor seri dengan bandar/lawan, modal taruhan kembali' },
+    ];
+  }
+
+  if (gameType === 'draw') {
+    return [
+      ...commonOptions,
+      {
+        key: 'targetScore',
+        label: 'Target Skor Kemenangan',
+        type: 'select',
+        choices: [
+          { value: 50, label: '50 Poin (Cepat)' },
+          { value: 100, label: '100 Poin (Standar)' },
+          { value: 250, label: '250 Poin (Panjang)' },
+        ],
+        help: 'Akumulasi skor yang dibutuhkan untuk memenangkan pertandingan'
+      },
+      { key: 'autoSort', label: 'Rapikan Urutan Kartu Otomatis', type: 'boolean', help: 'Otomatis kelompokkan kartu sejenis dan berurutan' },
+      { key: 'discardPenalty', label: 'Penalti Membuang Kartu Kunci', type: 'boolean', help: 'Denda poin tambahan jika membuang kartu yang dibutuhkan lawan' },
+    ];
+  }
+
+  if (gameType === 'shedding') {
+    return [
+      ...commonOptions,
+      { key: 'allowStacking', label: 'Menumpuk Kartu Denda (Draw Stacking)', type: 'boolean', help: 'Izinkan membalas kartu +2/+4 dengan kartu denda serupa agar terakumulasi ke pemain berikutnya' },
+      { key: 'autoSort', label: 'Urutkan Kartu Tangan Otomatis', type: 'boolean', help: 'Otomatis urutkan kartu dari angka terendah ke tertinggi' },
+      { key: 'showHints', label: 'Sorot Kartu yang Sah (Smart Hint)', type: 'boolean', help: 'Beri efek cahaya pada kartu yang bisa dimainkan melawan meja' },
+    ];
+  }
+
+  if (gameType === 'trick') {
+    return [
+      ...commonOptions,
+      {
+        key: 'leadRule',
+        label: 'Aturan Pembuka Trik',
+        type: 'select',
+        choices: [
+          { value: 'winner_leads', label: 'Pemenang Trik Memimpin Trik Berikutnya' },
+          { value: 'lowest_card', label: 'Pemegang Kartu Terendah Buka Trik Pertama' },
+        ],
+        help: 'Urutan pemain yang berhak memimpin putaran trik baru'
+      },
+      { key: 'followSuitOnly', label: 'Wajib Ikuti Kembang (Follow Suit)', type: 'boolean', help: 'Pemain wajib mengeluarkan kartu berkembang sama dengan pembuka jika ada' },
+      { key: 'showHints', label: 'Bantuan Sorot Kartu Sah', type: 'boolean', help: 'Tampilkan sorotan pada kartu yang boleh dikeluarkan' },
+    ];
+  }
+
+  // matching
+  return [
+    ...commonOptions,
+    { key: 'foulPenalty', label: 'Penalti Salah Reaksi / Tepok (Foul)', type: 'boolean', help: 'Pemain yang salah tepok atau salah ambil kartu wajib mengambil kartu buangan' },
+    { key: 'showHints', label: 'Bantuan Sorot Pasangan Kartu', type: 'boolean', help: 'Beri tanda visual ketika kartu memiliki pasangan yang cocok' },
+  ];
+}
+
 /** Helper pembuat game kartu umum yang modular & stabil */
 function createCardGame(
   gameId: string,
@@ -83,18 +206,26 @@ function createCardGame(
   maxRounds: number = 3,
   gameType: 'trick' | 'draw' | 'matching' | 'shedding' | 'points' | 'poker' = 'draw'
 ): GameModule<SimpleCardGameState, SimpleCardGameAction, SimpleCardGameView, SimpleGameOptions> {
+  const options = getOptionsForGameType(gameId, gameType);
+  const defaultOpts: SimpleGameOptions = {
+    turnSeconds: 15,
+    passAndPlay: false,
+    targetScore: 100,
+  };
+
   return {
     id: gameId,
     minPlayers,
     maxPlayers,
-    defaultOptions: { turnSeconds: 15, passAndPlay: false },
-    options: [],
+    defaultOptions: defaultOpts,
+    options,
 
     sanitizeOptions(raw: unknown): SimpleGameOptions {
       const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
       return {
         passAndPlay: Boolean(r.passAndPlay),
         turnSeconds: typeof r.turnSeconds === 'number' ? r.turnSeconds : 15,
+        targetScore: typeof r.targetScore === 'number' ? r.targetScore : 100,
       };
     },
 

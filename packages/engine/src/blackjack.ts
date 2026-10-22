@@ -24,6 +24,10 @@ export interface BlackjackOptions {
   rounds: number;
   decks: number;
   dealerHitsSoft17: boolean;
+  blackjackPayout?: '3:2' | '6:5';
+  allowDoubleAnyTwo?: boolean;
+  turnSeconds?: number;
+  passAndPlay?: boolean;
 }
 
 type Phase = 'betting' | 'playing' | 'dealer' | 'roundOver' | 'gameOver';
@@ -66,13 +70,96 @@ export interface BlackjackView extends BaseView {
   legal: { canBet: boolean; minBet: number; maxBet: number; canHit: boolean; canStand: boolean; canDouble: boolean } | null;
 }
 
-const DEFAULTS: BlackjackOptions = { startingChips: 1000, minBet: 10, rounds: 10, decks: 6, dealerHitsSoft17: false };
+const DEFAULTS: BlackjackOptions = {
+  startingChips: 1000,
+  minBet: 10,
+  rounds: 10,
+  decks: 6,
+  dealerHitsSoft17: false,
+  blackjackPayout: '3:2',
+  allowDoubleAnyTwo: true,
+  turnSeconds: 15,
+  passAndPlay: false,
+};
+
 const OPTIONS: OptionSpec[] = [
-  { key: 'startingChips', label: 'Chip awal', type: 'number', min: 100, max: 100000, step: 100 },
-  { key: 'minBet', label: 'Taruhan minimum', type: 'number', min: 1, max: 1000, step: 1 },
-  { key: 'rounds', label: 'Jumlah ronde', type: 'number', min: 1, max: 100, step: 1 },
-  { key: 'decks', label: 'Jumlah deck', type: 'select', choices: [{ value: 1, label: '1 deck' }, { value: 6, label: '6 deck' }] },
-  { key: 'dealerHitsSoft17', label: 'Dealer hit pada soft 17 (H17)', type: 'boolean' },
+  {
+    key: 'startingChips',
+    label: 'Chip Awal',
+    type: 'select',
+    choices: [
+      { value: 500, label: '500 Chip (Santai)' },
+      { value: 1000, label: '1.000 Chip (Standar)' },
+      { value: 5000, label: '5.000 Chip (High Roller)' },
+      { value: 10000, label: '10.000 Chip (VIP)' },
+    ],
+    help: 'Jumlah modal chip awal setiap pemain'
+  },
+  {
+    key: 'minBet',
+    label: 'Taruhan Minimum',
+    type: 'select',
+    choices: [
+      { value: 5, label: '5 Chip' },
+      { value: 10, label: '10 Chip' },
+      { value: 25, label: '25 Chip' },
+      { value: 50, label: '50 Chip' },
+      { value: 100, label: '100 Chip' },
+    ],
+    help: 'Batas taruhan terendah per tangan ronde'
+  },
+  {
+    key: 'decks',
+    label: 'Jumlah Deck Kartu (Shoe)',
+    type: 'select',
+    choices: [
+      { value: 1, label: '1 Deck (Single Deck - Klasik)' },
+      { value: 2, label: '2 Decks (Double Deck)' },
+      { value: 4, label: '4 Decks (Mid Shoe)' },
+      { value: 6, label: '6 Decks (Standar Kasino Vegas)' },
+      { value: 8, label: '8 Decks (Shoe Besar)' },
+    ],
+    help: 'Semakin banyak deck, peluang kartu keluar semakin seimbang dan menantang'
+  },
+  {
+    key: 'blackjackPayout',
+    label: 'Rasio Pembayaran Blackjack Alami',
+    type: 'select',
+    choices: [
+      { value: '3:2', label: '3:2 (Rekomendasi - Untung Pemain)' },
+      { value: '6:5', label: '6:5 (Kasino Modern)' },
+    ],
+    help: 'Besar keuntungan saat mendapatkan kombinasi As + 10 pada 2 kartu pertama'
+  },
+  {
+    key: 'dealerHitsSoft17',
+    label: 'Aturan Dealer pada Soft 17',
+    type: 'select',
+    choices: [
+      { value: 0, label: 'Dealer Stand pada Soft 17 (S17 - Rekomendasi)' },
+      { value: 1, label: 'Dealer Wajib Hit pada Soft 17 (H17)' },
+    ],
+    help: 'Soft 17 adalah kartu bandar berjumlah 17 dengan As yang bernilai 11'
+  },
+  {
+    key: 'allowDoubleAnyTwo',
+    label: 'Bebas Double Down pada 2 Kartu Pertama',
+    type: 'boolean',
+    help: 'Izinkan menggandakan nilai taruhan untuk tepat 1 kartu tambahan di kombinasi angka berapapun'
+  },
+  {
+    key: 'turnSeconds',
+    label: 'Batas Waktu Giliran',
+    type: 'select',
+    choices: [
+      { value: 10, label: '10 Detik (Kilat)' },
+      { value: 15, label: '15 Detik (Standar)' },
+      { value: 25, label: '25 Detik (Santai)' },
+    ],
+    help: 'Waktu berpikir sebelum otomatis Stand'
+  },
+  { key: 'rounds', label: 'Jumlah Ronde Pertandingan', type: 'number', min: 1, max: 100, step: 5, help: 'Total putaran kartu sebelum game berakhir' },
+  { key: 'passAndPlay', label: 'Mode Operan HP (Multiplayer Lokal)', type: 'boolean', help: 'Tampilkan layar privasi saat berganti giliran antar pemain fisik' },
 ];
 
 /** Total terbaik ≤ 21 jika mungkin; soft = ada As yang dihitung 11. */
@@ -203,12 +290,18 @@ export const blackjack: GameModule<BlackjackState, BlackjackAction, BlackjackVie
   sanitizeOptions(raw) {
     const r = (raw ?? {}) as Partial<BlackjackOptions>;
     const minBet = clampInt(r.minBet, 1, 1000, DEFAULTS.minBet);
+    const d = Number(r.decks);
+    const validDecks = [1, 2, 4, 6, 8].includes(d) ? d : 6;
     return {
       startingChips: clampInt(r.startingChips, Math.max(100, minBet * 5), 100000, DEFAULTS.startingChips),
       minBet,
       rounds: clampInt(r.rounds, 1, 100, DEFAULTS.rounds),
-      decks: Number(r.decks) === 1 ? 1 : 6,
-      dealerHitsSoft17: !!r.dealerHitsSoft17,
+      decks: validDecks,
+      dealerHitsSoft17: Boolean(Number(r.dealerHitsSoft17)) || r.dealerHitsSoft17 === true,
+      blackjackPayout: r.blackjackPayout === '6:5' ? '6:5' : '3:2',
+      allowDoubleAnyTwo: r.allowDoubleAnyTwo !== undefined ? Boolean(r.allowDoubleAnyTwo) : true,
+      turnSeconds: typeof r.turnSeconds === 'number' ? clampInt(r.turnSeconds, 5, 60, 15) : 15,
+      passAndPlay: Boolean(r.passAndPlay),
     };
   },
 

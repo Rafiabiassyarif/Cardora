@@ -297,37 +297,85 @@ export function CustomSelect<T extends string | number>({
   );
 }
 
-/** Form opsi generik dari OptionSpec modul game. */
+/** Form opsi generik dari OptionSpec modul game dengan desain card-row modern. */
 export function OptionsForm({ specs, values, onChange, disabled }: {
   specs: OptionSpec[]; values: Record<string, unknown>; onChange: (key: string, v: unknown) => void; disabled?: boolean;
 }) {
   return (
-    <div className="stack">
-      {specs.map(s => (
-        <label key={s.key} className="row" style={{ justifyContent: 'space-between' }}>
-          <span className="grow">{s.label}{s.help && <span className="muted small"><br />{s.help}</span>}</span>
-          {s.type === 'number' && (
-            <NumberField min={s.min} max={s.max} step={s.step} disabled={disabled} label={s.label}
-              value={Number(values[s.key] ?? s.min)} onCommit={v => onChange(s.key, v)} />
-          )}
-          {s.type === 'select' && (
-            <CustomSelect
-              style={{ minWidth: 150 }}
-              disabled={disabled}
-              value={isNaN(Number(values[s.key])) ? String(values[s.key]) : Number(values[s.key])}
-              options={s.choices.map(c => ({
-                value: isNaN(Number(c.value)) ? String(c.value) : Number(c.value),
-                label: c.label,
-              }))}
-              onChange={v => onChange(s.key, v)}
-              ariaLabel={s.label}
-            />
-          )}
-          {s.type === 'boolean' && (disabled
-            ? <span className="badge">{values[s.key] ? 'Ya' : 'Tidak'}</span>
-            : <Switch on={!!values[s.key]} label={s.label} onChange={v => onChange(s.key, v)} />)}
-        </label>
-      ))}
+    <div className="options-form-grid" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {specs.map(s => {
+        const isTime = s.key.toLowerCase().includes('second') || s.key.toLowerCase().includes('time');
+        const isChip = s.key.toLowerCase().includes('chip') || s.key.toLowerCase().includes('stack') || s.key.toLowerCase().includes('blind') || s.key.toLowerCase().includes('bet');
+        const isDevice = s.key.toLowerCase().includes('pass') || s.key.toLowerCase().includes('play');
+        const isBomb = s.key.toLowerCase().includes('bomb');
+        const isForbidden = s.key.toLowerCase().includes('forbid') || s.key.toLowerCase().includes('penalty') || s.key.toLowerCase().includes('foul');
+        const isCard = s.key.toLowerCase().includes('card') || s.key.toLowerCase().includes('hand') || s.key.toLowerCase().includes('deck') || s.key.toLowerCase().includes('opening') || s.key.toLowerCase().includes('ace');
+        const isEye = s.key.toLowerCase().includes('hint') || s.key.toLowerCase().includes('odds') || s.key.toLowerCase().includes('muck') || s.key.toLowerCase().includes('roadmap');
+
+        const icon = isTime ? '⏱️'
+          : isChip ? '🪙'
+          : isDevice ? '📱'
+          : isBomb ? '💣'
+          : isForbidden ? '🚫'
+          : isCard ? '🃏'
+          : isEye ? '👁️'
+          : '⚙️';
+
+        return (
+          <div
+            key={s.key}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 14,
+              padding: '11px 14px',
+              borderRadius: 14,
+              background: 'rgba(255, 255, 255, 0.7)',
+              border: '1px solid rgba(70, 50, 30, 0.08)',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
+              transition: 'background 0.15s ease, border-color 0.15s ease',
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0, paddingRight: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: '1rem', lineHeight: 1 }} aria-hidden="true">{icon}</span>
+                <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--ink, #2C241B)' }}>
+                  {s.label}
+                </span>
+              </div>
+              {s.help && (
+                <div style={{ fontSize: '0.76rem', color: 'var(--muted, #7E7265)', marginTop: 2, lineHeight: 1.35, paddingLeft: 24 }}>
+                  {s.help}
+                </div>
+              )}
+            </div>
+
+            <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+              {s.type === 'number' && (
+                <NumberField min={s.min} max={s.max} step={s.step} disabled={disabled} label={s.label}
+                  value={Number(values[s.key] ?? s.min)} onCommit={v => onChange(s.key, v)} />
+              )}
+              {s.type === 'select' && (
+                <CustomSelect
+                  style={{ minWidth: 155, maxWidth: 220 }}
+                  disabled={disabled}
+                  value={isNaN(Number(values[s.key])) ? String(values[s.key]) : Number(values[s.key])}
+                  options={s.choices.map(c => ({
+                    value: isNaN(Number(c.value)) ? String(c.value) : Number(c.value),
+                    label: c.label,
+                  }))}
+                  onChange={v => onChange(s.key, v)}
+                  ariaLabel={s.label}
+                />
+              )}
+              {s.type === 'boolean' && (disabled
+                ? <span className="badge">{values[s.key] ? 'Aktif' : 'Nonaktif'}</span>
+                : <Switch on={!!values[s.key]} label={s.label} onChange={v => onChange(s.key, v)} />)}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -63,6 +63,10 @@ export default function Setup({ nav, gameId }: { nav: Nav; gameId: string }) {
   const label = (n: number) => (n === 1 ? 'Solo' : n === 2 ? 'Duo' : n === 3 ? 'Trio' : `${n} Pemain`);
 
   const isHoldem = gameId === 'holdem';
+  const isTongkrongan = gameId === 'tongkrongan' || gameId === 'capsa-banting';
+  const isBlackjack = gameId === 'blackjack';
+  const isCangkulan = gameId === 'cangkulan';
+
   const currentStack = Number(options.startingStack ?? 1000);
   const currentBB = Number(options.bigBlind ?? 20);
   const activePreset = isHoldem
@@ -77,11 +81,102 @@ export default function Setup({ nav, gameId }: { nav: Nav; gameId: string }) {
 
   const applyPreset = (preset: 'casual' | 'standard' | 'highroller') => {
     if (preset === 'casual') {
-      setOptions(o => ({ ...o, startingStack: 500, bigBlind: 10 }));
+      setOptions(o => ({ ...o, startingStack: 500, bigBlind: 10, turnSeconds: 25 }));
     } else if (preset === 'standard') {
-      setOptions(o => ({ ...o, startingStack: 1000, bigBlind: 20 }));
+      setOptions(o => ({ ...o, startingStack: 1000, bigBlind: 20, turnSeconds: 25 }));
     } else if (preset === 'highroller') {
-      setOptions(o => ({ ...o, startingStack: 5000, bigBlind: 100 }));
+      setOptions(o => ({ ...o, startingStack: 5000, bigBlind: 100, turnSeconds: 15, blindStructure: 'turbo' }));
+    }
+  };
+
+  const applyTongkronganPreset = (preset: 'standard' | 'speed' | 'casual') => {
+    if (preset === 'standard') {
+      setOptions(o => ({
+        ...o,
+        turnSeconds: 15,
+        openingRule: 'discard_all',
+        allowBombReset: true,
+        forbidPokerLast: true,
+        penaltyMultiplier: 'standard',
+        autoSortHand: true,
+        showHints: true,
+      }));
+    } else if (preset === 'speed') {
+      setOptions(o => ({
+        ...o,
+        turnSeconds: 10,
+        openingRule: 'discard_all',
+        allowBombReset: true,
+        forbidPokerLast: true,
+        penaltyMultiplier: 'extreme',
+        autoSortHand: true,
+        showHints: false,
+      }));
+    } else if (preset === 'casual') {
+      setOptions(o => ({
+        ...o,
+        turnSeconds: 20,
+        openingRule: 'spade3_only',
+        allowBombReset: true,
+        forbidPokerLast: false,
+        penaltyMultiplier: 'standard',
+        autoSortHand: true,
+        showHints: true,
+      }));
+    }
+  };
+
+  const applyBlackjackPreset = (preset: 'casual' | 'vip') => {
+    if (preset === 'casual') {
+      setOptions(o => ({
+        ...o,
+        startingChips: 500,
+        minBet: 10,
+        decks: 6,
+        dealerHitsSoft17: false,
+        blackjackPayout: '3:2',
+        allowDoubleAnyTwo: true,
+      }));
+    } else if (preset === 'vip') {
+      setOptions(o => ({
+        ...o,
+        startingChips: 5000,
+        minBet: 50,
+        decks: 2,
+        dealerHitsSoft17: false,
+        blackjackPayout: '3:2',
+        allowDoubleAnyTwo: true,
+      }));
+    }
+  };
+
+  const applyCangkulanPreset = (preset: 'standard' | 'speed') => {
+    if (preset === 'standard') {
+      setOptions(o => ({
+        ...o,
+        handSize: 7,
+        turnSeconds: 15,
+        aceHigh: true,
+        openWithDeck: true,
+        autoDrawAll: false,
+      }));
+    } else if (preset === 'speed') {
+      setOptions(o => ({
+        ...o,
+        handSize: 5,
+        turnSeconds: 10,
+        aceHigh: true,
+        openWithDeck: true,
+        autoDrawAll: true,
+      }));
+    }
+  };
+
+  const applyGenericPreset = (preset: 'casual' | 'speed') => {
+    if (preset === 'casual') {
+      setOptions(o => ({ ...o, turnSeconds: 25, showHints: true }));
+    } else if (preset === 'speed') {
+      setOptions(o => ({ ...o, turnSeconds: 10, showHints: false }));
     }
   };
 
@@ -238,36 +333,124 @@ export default function Setup({ nav, gameId }: { nav: Nav; gameId: string }) {
             <h2 className="setup-section-title">
               <IconSparkles size={16} /> Pengaturan Taruhan & Aturan
             </h2>
-            <span className="setup-section-subtitle">Sesuaikan chip & limit meja</span>
+            <span className="setup-section-subtitle">
+              Sesuaikan chip, timer & aturan meja ({mod.options.length} Pilihan Tersedia)
+            </span>
           </div>
           <div className="card-box" style={{ borderRadius: 18, padding: 18 }}>
-            {/* Quick Presets for Poker / Hold'em */}
-            {isHoldem && (
-              <div className="setup-preset-row">
-                <span className="small muted" style={{ fontWeight: 700 }}>Preset Cepat:</span>
-                <button
-                  type="button"
-                  className={`setup-preset-pill ${activePreset === 'casual' ? 'is-active' : ''}`}
-                  onClick={() => applyPreset('casual')}
-                >
-                  ☕ Santai (500 Chip / BB 10)
-                </button>
-                <button
-                  type="button"
-                  className={`setup-preset-pill ${activePreset === 'standard' ? 'is-active' : ''}`}
-                  onClick={() => applyPreset('standard')}
-                >
-                  ⚖️ Standar (1.000 Chip / BB 20)
-                </button>
-                <button
-                  type="button"
-                  className={`setup-preset-pill ${activePreset === 'highroller' ? 'is-active' : ''}`}
-                  onClick={() => applyPreset('highroller')}
-                >
-                  💎 High Roller (5.000 Chip / BB 100)
-                </button>
-              </div>
-            )}
+            {/* Quick Presets Universal untuk Setiap Game */}
+            <div className="setup-preset-row" style={{ marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+              <span className="small muted" style={{ fontWeight: 700, alignSelf: 'center' }}>Preset Cepat:</span>
+              
+              {isHoldem && (
+                <>
+                  <button
+                    type="button"
+                    className={`setup-preset-pill ${activePreset === 'casual' ? 'is-active' : ''}`}
+                    onClick={() => applyPreset('casual')}
+                  >
+                    ☕ Santai (500 Chip / BB 10)
+                  </button>
+                  <button
+                    type="button"
+                    className={`setup-preset-pill ${activePreset === 'standard' ? 'is-active' : ''}`}
+                    onClick={() => applyPreset('standard')}
+                  >
+                    ⚖️ Standar (1.000 Chip / BB 20)
+                  </button>
+                  <button
+                    type="button"
+                    className={`setup-preset-pill ${activePreset === 'highroller' ? 'is-active' : ''}`}
+                    onClick={() => applyPreset('highroller')}
+                  >
+                    💎 High Roller (5.000 Chip / BB 100)
+                  </button>
+                </>
+              )}
+
+              {isTongkrongan && (
+                <>
+                  <button
+                    type="button"
+                    className={`setup-preset-pill ${options.turnSeconds === 15 && options.openingRule === 'discard_all' && options.allowBombReset ? 'is-active' : ''}`}
+                    onClick={() => applyTongkronganPreset('standard')}
+                  >
+                    🍻 Standar Tongkrongan (15s · Buang 3 · Bom Aktif)
+                  </button>
+                  <button
+                    type="button"
+                    className={`setup-preset-pill ${options.turnSeconds === 10 ? 'is-active' : ''}`}
+                    onClick={() => applyTongkronganPreset('speed')}
+                  >
+                    ⚡ Kilat Turnamen (10s · Denda Hangus x2)
+                  </button>
+                  <button
+                    type="button"
+                    className={`setup-preset-pill ${options.turnSeconds === 20 ? 'is-active' : ''}`}
+                    onClick={() => applyTongkronganPreset('casual')}
+                  >
+                    ☕ Santai (20s · Bantuan Hint)
+                  </button>
+                </>
+              )}
+
+              {isBlackjack && (
+                <>
+                  <button
+                    type="button"
+                    className={`setup-preset-pill ${Number(options.startingChips) === 500 ? 'is-active' : ''}`}
+                    onClick={() => applyBlackjackPreset('casual')}
+                  >
+                    ☕ Kasual (500 Chip / Min 10)
+                  </button>
+                  <button
+                    type="button"
+                    className={`setup-preset-pill ${Number(options.startingChips) === 5000 ? 'is-active' : ''}`}
+                    onClick={() => applyBlackjackPreset('vip')}
+                  >
+                    💎 Vegas VIP (5.000 Chip / Min 50)
+                  </button>
+                </>
+              )}
+
+              {isCangkulan && (
+                <>
+                  <button
+                    type="button"
+                    className={`setup-preset-pill ${options.handSize === 7 ? 'is-active' : ''}`}
+                    onClick={() => applyCangkulanPreset('standard')}
+                  >
+                    🌾 Standar 7 Kartu (Tradisional)
+                  </button>
+                  <button
+                    type="button"
+                    className={`setup-preset-pill ${options.handSize === 5 ? 'is-active' : ''}`}
+                    onClick={() => applyCangkulanPreset('speed')}
+                  >
+                    ⚡ Kilat 5 Kartu (Nyangkul Instan)
+                  </button>
+                </>
+              )}
+
+              {!isHoldem && !isTongkrongan && !isBlackjack && !isCangkulan && (
+                <>
+                  <button
+                    type="button"
+                    className={`setup-preset-pill ${options.turnSeconds === 25 ? 'is-active' : ''}`}
+                    onClick={() => applyGenericPreset('casual')}
+                  >
+                    ☕ Santai (Timer 25s · Bantuan Hint)
+                  </button>
+                  <button
+                    type="button"
+                    className={`setup-preset-pill ${options.turnSeconds === 10 ? 'is-active' : ''}`}
+                    onClick={() => applyGenericPreset('speed')}
+                  >
+                    ⚡ Kilat Kompetitif (Timer 10s)
+                  </button>
+                </>
+              )}
+            </div>
 
             <OptionsForm
               specs={mod.options}

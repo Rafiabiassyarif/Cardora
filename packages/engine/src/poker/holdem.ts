@@ -31,6 +31,11 @@ export interface HoldemOptions {
   bigBlind: number;
   /** 0 = main sampai tersisa satu pemain. */
   maxHands: number;
+  blindStructure?: 'static' | 'turbo' | 'hyper';
+  turnSeconds?: number;
+  showHandStrength?: boolean;
+  autoMuck?: boolean;
+  passAndPlay?: boolean;
 }
 
 export interface HoldemSeat {
@@ -120,12 +125,86 @@ export interface HoldemView extends BaseView {
 }
 
 const OPTIONS: OptionSpec[] = [
-  { key: 'startingStack', label: 'Chip awal', type: 'number', min: 200, max: 100000, step: 100 },
-  { key: 'bigBlind', label: 'Big blind', type: 'number', min: 2, max: 2000, step: 2, help: 'Small blind = setengah big blind' },
-  { key: 'maxHands', label: 'Batas tangan (0 = sampai satu juara)', type: 'number', min: 0, max: 500, step: 5 },
+  {
+    key: 'startingStack',
+    label: 'Modal Chip Awal',
+    type: 'select',
+    choices: [
+      { value: 500, label: '500 Chip (Santai)' },
+      { value: 1000, label: '1.000 Chip (Standar)' },
+      { value: 2500, label: '2.500 Chip (Kompetitif)' },
+      { value: 5000, label: '5.000 Chip (High Roller)' },
+      { value: 10000, label: '10.000 Chip (Deep Stack)' },
+    ],
+    help: 'Jumlah modal chip yang didapat setiap pemain di meja'
+  },
+  {
+    key: 'bigBlind',
+    label: 'Taruhan Big Blind',
+    type: 'select',
+    choices: [
+      { value: 10, label: '10 Chip (SB 5)' },
+      { value: 20, label: '20 Chip (SB 10)' },
+      { value: 50, label: '50 Chip (SB 25)' },
+      { value: 100, label: '100 Chip (SB 50)' },
+      { value: 200, label: '200 Chip (SB 100)' },
+    ],
+    help: 'Taruhan wajib; Small Blind otomatis setengah dari Big Blind'
+  },
+  {
+    key: 'blindStructure',
+    label: 'Kenaikan Blind',
+    type: 'select',
+    choices: [
+      { value: 'static', label: 'Tetap (Cash Game Standar)' },
+      { value: 'turbo', label: 'Turbo (Naik 50% Tiap 5 Tangan)' },
+      { value: 'hyper', label: 'Hyper-Turbo (Naik Tiap 3 Tangan)' },
+    ],
+    help: 'Kecepatan eliminasi pemain melalui kenaikan taruhan berkala'
+  },
+  {
+    key: 'turnSeconds',
+    label: 'Batas Waktu Giliran',
+    type: 'select',
+    choices: [
+      { value: 15, label: '15 Detik (Cepat)' },
+      { value: 25, label: '25 Detik (Standar Kasino)' },
+      { value: 40, label: '40 Detik (Berpikir Dalam)' },
+    ],
+    help: 'Waktu berpikir sebelum sistem otomatis Check atau Fold'
+  },
+  {
+    key: 'showHandStrength',
+    label: 'Kalkulator Pot Odds & Kekuatan Kartu',
+    type: 'boolean',
+    help: 'Tampilkan persentase kemenangan dan analisis kombinasi kartu secara langsung di layar'
+  },
+  {
+    key: 'autoMuck',
+    label: 'Auto-Muck (Sembunyikan Kartu Kalah)',
+    type: 'boolean',
+    help: 'Sembunyikan kartu tangan yang kalah saat showdown tanpa diperlihatkan ke lawan'
+  },
+  {
+    key: 'passAndPlay',
+    label: 'Mode Operan HP (Multiplayer Lokal)',
+    type: 'boolean',
+    help: 'Tampilkan layar privasi saat giliran berganti ke pemain manusia berikutnya'
+  },
+  { key: 'maxHands', label: 'Batas Tangan (0 = sampai satu juara)', type: 'number', min: 0, max: 200, step: 5 },
 ];
 
-const DEFAULTS: HoldemOptions = { startingStack: 1000, smallBlind: 10, bigBlind: 20, maxHands: 0 };
+const DEFAULTS: HoldemOptions = {
+  startingStack: 1000,
+  smallBlind: 10,
+  bigBlind: 20,
+  maxHands: 0,
+  blindStructure: 'static',
+  turnSeconds: 25,
+  showHandStrength: true,
+  autoMuck: true,
+  passAndPlay: false,
+};
 
 /* ------------------------------ helpers -------------------------------- */
 
@@ -328,7 +407,17 @@ export const holdem: GameModule<HoldemState, HoldemAction, HoldemView, HoldemOpt
     const bigBlind = clampInt(r.bigBlind, 2, 2000, DEFAULTS.bigBlind);
     const bb = bigBlind % 2 === 0 ? bigBlind : bigBlind + 1;
     const startingStack = clampInt(r.startingStack, Math.max(200, bb * 10), 100000, DEFAULTS.startingStack);
-    return { startingStack, bigBlind: bb, smallBlind: bb / 2, maxHands: clampInt(r.maxHands, 0, 500, 0) };
+    return {
+      startingStack,
+      bigBlind: bb,
+      smallBlind: bb / 2,
+      maxHands: clampInt(r.maxHands, 0, 500, 0),
+      blindStructure: r.blindStructure === 'turbo' || r.blindStructure === 'hyper' ? r.blindStructure : 'static',
+      turnSeconds: typeof r.turnSeconds === 'number' ? clampInt(r.turnSeconds, 10, 60, 25) : 25,
+      showHandStrength: r.showHandStrength !== undefined ? Boolean(r.showHandStrength) : true,
+      autoMuck: r.autoMuck !== undefined ? Boolean(r.autoMuck) : true,
+      passAndPlay: Boolean(r.passAndPlay),
+    };
   },
 
   setup(seats: SeatInfo[], options, rng) {
