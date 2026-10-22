@@ -1,0 +1,904 @@
+/* ==========================================================================
+   home.css — dashboard lobby (tema soft light). Grid 12 kolom: konten utama +
+   sidebar. Semua kelas diawali .dash- agar tidak bentrok dengan layar lain.
+   ========================================================================== */
+
+.dash {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: calc(14px + var(--safe-top)) 24px calc(28px + var(--safe-bottom));
+  color: var(--ink);
+}
+
+/* ---------- Nav atas ---------- */
+.dash-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 8px 8px 14px;
+  margin-bottom: 22px;
+  border-radius: 18px;
+  background: rgba(255, 253, 249, 0.78);
+  border: 1px solid var(--hair);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  position: sticky;
+  top: calc(8px + var(--safe-top));
+  z-index: 20;
+}
+
+.dash-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.2rem;
+  letter-spacing: 0.01em;
+}
+
+.dash-brand b {
+  color: var(--terra);
+  font-weight: 800;
+}
+
+.dash-brand img {
+  border-radius: 9px;
+}
+
+.dash-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.dash-iconbar {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--cream-2);
+  border: 1px solid var(--hair);
+}
+
+.dash-iconbtn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.dash-iconbtn:hover {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.dash-iconbtn.is-on {
+  background: var(--paper);
+  color: var(--terra);
+  box-shadow: var(--shadow-sm);
+}
+
+.dash-iconbtn:focus-visible,
+.dash-user:focus-visible,
+.dash-tile:focus-visible,
+.dash-game:focus-visible,
+.dash-list button:focus-visible {
+  outline: 3px solid rgba(194, 105, 74, 0.3);
+  outline-offset: 2px;
+}
+
+.dash .wallet-pill {
+  height: 42px;
+  border-radius: 12px;
+}
+
+.dash-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 14px 4px 4px;
+  border-radius: 12px;
+  border: 1px solid var(--hair);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dash-user:hover {
+  border-color: var(--terra-line);
+  box-shadow: var(--shadow-sm);
+}
+
+.dash-user .avatar {
+  width: 34px;
+  height: 34px;
+  font-size: 1.15rem;
+  border-width: 1px;
+}
+
+.dash-user-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  min-width: 0;
+}
+
+.dash-user-text b {
+  font-size: 0.88rem;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dash-user-text small {
+  font-size: 0.72rem;
+  color: var(--ink-3);
+}
+
+/* ---------- Grid ---------- */
+.dash-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 24px;
+  align-items: start;
+}
+
+.dash-main,
+.dash-side {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+}
+
+/* ---------- Hero ---------- */
+.dash-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  align-items: center;
+  gap: 16px;
+  padding: 30px 32px;
+  border-radius: 24px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(200, 224, 206, 0.75) 0, transparent 46%),
+    radial-gradient(circle at 85% 110%, rgba(245, 227, 188, 0.75) 0, transparent 45%),
+    linear-gradient(135deg, #FFFDF9 0%, #FBF3E9 100%);
+  border: 1px solid var(--hair);
+  box-shadow: var(--shadow);
+}
+
+.dash-eyebrow {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--terra-text);
+}
+
+.dash-hero h1 {
+  margin: 8px 0 8px;
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 3.2vw, 2.4rem);
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.dash-hero p {
+  margin: 0 0 22px;
+  max-width: 460px;
+  color: var(--ink-2);
+  line-height: 1.55;
+  font-size: 0.96rem;
+}
+
+.dash-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dash-hero-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 50px;
+  padding: 0 20px;
+}
+
+.dash-cta {
+  flex-wrap: wrap;
+}
+
+.dash-cta small {
+  font-weight: 600;
+  font-size: 0.76rem;
+  opacity: 0.85;
+  padding-left: 10px;
+  margin-left: 2px;
+  border-left: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+/* Kipas kartu dekoratif */
+.dash-hero-art {
+  position: relative;
+  height: 170px;
+}
+
+.dash-fan {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.dash-card {
+  position: absolute;
+  width: 92px;
+  height: 130px;
+  border-radius: 12px;
+  background: linear-gradient(170deg, #FFFFFF 0%, #FFFCF6 100%);
+  border: 1px solid #E4D8C6;
+  box-shadow: 0 2px 4px rgba(70, 50, 30, 0.06), 0 14px 28px rgba(70, 50, 30, 0.14);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.25rem;
+  color: var(--ink);
+  padding: 8px 10px;
+  transform-origin: 50% 120%;
+  transition: transform 0.45s var(--ease-soft, ease);
+}
+
+.dash-card i {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  font-size: 2.6rem;
+}
+
+.dash-card.red {
+  color: #C0544A;
+}
+
+.dash-card:nth-child(1) {
+  transform: rotate(-14deg) translateX(-26px);
+}
+
+.dash-card:nth-child(2) {
+  transform: rotate(0deg) translateY(-8px);
+  z-index: 2;
+}
+
+.dash-card:nth-child(3) {
+  transform: rotate(14deg) translateX(26px);
+}
+
+.dash-hero:hover .dash-card:nth-child(1) {
+  transform: rotate(-18deg) translateX(-34px);
+}
+
+.dash-hero:hover .dash-card:nth-child(2) {
+  transform: translateY(-14px);
+}
+
+.dash-hero:hover .dash-card:nth-child(3) {
+  transform: rotate(18deg) translateX(34px);
+}
+
+/* ---------- Section ---------- */
+.dash-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.dash-section-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.12rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.dash-section-head>span {
+  font-size: 0.84rem;
+  color: var(--ink-3);
+}
+
+.dash-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--terra-text);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dash-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Tile aksi (Buat / Gabung room) */
+.dash-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.dash-tile,
+.dash-game {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid var(--hair);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.dash-tile:hover,
+.dash-game:hover {
+  transform: translateY(-2px);
+  border-color: var(--terra-line);
+  box-shadow: var(--shadow);
+}
+
+.dash-tile-icon,
+.dash-list-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+}
+
+.dash-tile-text,
+.dash-list-text,
+.dash-game-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.dash-tile-text b,
+.dash-game-body b,
+.dash-list-text b {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.dash-tile-text small,
+.dash-game-body small,
+.dash-list-text small {
+  font-size: 0.8rem;
+  color: var(--ink-3);
+  line-height: 1.35;
+}
+
+.dash-chev {
+  flex: 0 0 auto;
+  color: var(--ink-3);
+  transition: transform 0.18s ease, color 0.18s ease;
+}
+
+.dash-tile:hover .dash-chev,
+.dash-list button:hover .dash-chev {
+  transform: translateX(3px);
+  color: var(--terra);
+}
+
+.tone-terra {
+  background: var(--terra-soft);
+  color: var(--terra-text);
+}
+
+.tone-sage {
+  background: var(--sage-soft);
+  color: var(--sage-text);
+}
+
+.tone-sky {
+  background: var(--sky-soft);
+  color: var(--sky-text);
+}
+
+.tone-butter {
+  background: var(--butter);
+  color: var(--butter-text);
+}
+
+/* Kartu game */
+.dash-games {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.dash-game {
+  padding: 14px 16px;
+}
+
+.dash-game-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  font-size: 1.4rem;
+  background: var(--cream-2);
+  color: var(--ink);
+}
+
+.dash-game:nth-child(4n+1) .dash-game-icon {
+  background: var(--terra-soft);
+  color: var(--terra-text);
+}
+
+.dash-game:nth-child(4n+2) .dash-game-icon {
+  background: var(--sage-soft);
+  color: var(--sage-text);
+}
+
+.dash-game:nth-child(4n+3) .dash-game-icon {
+  background: var(--sky-soft);
+  color: var(--sky-text);
+}
+
+.dash-game:nth-child(4n+4) .dash-game-icon {
+  background: var(--butter);
+  color: var(--butter-text);
+}
+
+.dash-game-body b {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-fav {
+  color: #D9A84E;
+  fill: #E2BE7A;
+  flex: 0 0 auto;
+}
+
+.dash-game-tag {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--cream-2);
+  color: var(--ink-2);
+}
+
+/* ---------- Sidebar ---------- */
+.dash-card-box {
+  padding: 18px;
+  border-radius: 20px;
+  background: var(--paper);
+  border: 1px solid var(--hair);
+  box-shadow: var(--shadow-sm);
+}
+
+.dash-pad0 {
+  padding: 0;
+  overflow: hidden;
+}
+
+.dash-box-title {
+  margin: 0;
+  padding: 16px 18px 10px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.dash-level {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.dash-level>div:first-child {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  background: var(--terra-soft);
+  color: var(--terra-text);
+  line-height: 1;
+}
+
+.dash-level>div:first-child small {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.dash-level>div:first-child b {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+}
+
+.dash-level-bar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dash-level-bar .xp-bar {
+  height: 8px;
+}
+
+.dash-level-bar small {
+  font-size: 0.76rem;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--hair);
+}
+
+.dash-stats>div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.dash-stats>div+div {
+  border-left: 1px solid var(--hair);
+}
+
+.dash-stats b {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-stats small {
+  font-size: 0.74rem;
+  color: var(--ink-3);
+}
+
+.dash-list,
+.dash-history {
+  list-style: none;
+  margin: 0;
+  padding: 0 8px 8px;
+}
+
+.dash-list button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.dash-list button:hover {
+  background: var(--paper-2);
+}
+
+.dash-list .dash-list-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+}
+
+.dash-list .dash-list-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.dash-pill {
+  flex: 0 0 auto;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--terra);
+  color: #fff;
+}
+
+.dash-note {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  background: linear-gradient(135deg, #FFFBF1 0%, var(--paper) 100%);
+}
+
+.dash-note b {
+  font-size: 0.92rem;
+}
+
+.dash-note p {
+  margin: 4px 0 12px;
+  font-size: 0.82rem;
+  color: var(--ink-2);
+  line-height: 1.45;
+}
+
+.dash-note .btn-sm {
+  min-height: 34px;
+  padding: 0 14px;
+  font-size: 0.84rem;
+}
+
+.dash-history li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+}
+
+.dash-history li+li {
+  border-top: 1px solid var(--hair);
+}
+
+.dash-hist-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--cream-2);
+  font-size: 1.05rem;
+}
+
+.dash-rank {
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--cream-2);
+  color: var(--ink-2);
+}
+
+.dash-rank.win {
+  background: var(--sage-soft);
+  color: var(--sage-text);
+}
+
+.dash-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px 22px;
+  color: var(--ink-3);
+  text-align: center;
+}
+
+.dash-empty p {
+  margin: 0;
+  font-size: 0.86rem;
+}
+
+.dash-foot {
+  margin-top: 28px;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--ink-3);
+}
+
+/* Animasi masuk berurutan untuk blok dashboard */
+.dash-hero,
+.dash-section,
+.dash-card-box {
+  animation: fxRise 0.42s var(--ease-soft, ease) backwards;
+}
+
+.dash-main> :nth-child(2) {
+  animation-delay: 60ms;
+}
+
+.dash-main> :nth-child(3) {
+  animation-delay: 120ms;
+}
+
+.dash-side> :nth-child(1) {
+  animation-delay: 80ms;
+}
+
+.dash-side> :nth-child(2) {
+  animation-delay: 140ms;
+}
+
+.dash-side> :nth-child(3) {
+  animation-delay: 200ms;
+}
+
+.dash-side> :nth-child(4) {
+  animation-delay: 260ms;
+}
+
+/* ---------- Responsif ---------- */
+@media (max-width: 980px) {
+  .dash-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-side {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+
+  /* Kartu level + statistik membentang penuh, isinya berdampingan. */
+  .dash-side> :first-child {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: 20px;
+    align-items: center;
+  }
+
+  .dash-side> :first-child .dash-stats {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .dash-hero {
+    grid-template-columns: minmax(0, 1fr) 170px;
+  }
+
+  .dash-hero-art {
+    transform: scale(0.82);
+  }
+}
+
+@media (max-width: 720px) {
+  .dash {
+    padding: calc(10px + var(--safe-top)) 14px calc(24px + var(--safe-bottom));
+  }
+
+  .dash-nav {
+    padding: 6px;
+    margin-bottom: 16px;
+  }
+
+  .dash-brand span {
+    display: none;
+  }
+
+  .dash-user-text {
+    display: none;
+  }
+
+  .dash-user {
+    padding: 4px;
+  }
+
+  .dash-hero {
+    grid-template-columns: 1fr;
+    padding: 22px 20px;
+  }
+
+  .dash-hero-art {
+    display: none;
+  }
+
+  .dash-hero-actions .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .dash-two,
+  .dash-games,
+  .dash-side {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-side> :first-child {
+    display: block;
+  }
+
+  .dash-side> :first-child .dash-stats {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--hair);
+  }
+
+  .dash-section-head>span {
+    display: none;
+  }
+}
+
+@media (max-width: 400px) {
+  .dash-nav-right {
+    gap: 6px;
+  }
+
+  .dash-iconbtn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .dash .wallet-pill {
+    height: 38px;
+    padding: 0 10px;
+  }
+
+  .dash .wallet-pill .wallet-add-btn {
+    display: none;
+  }
+
+  .dash-brand img {
+    width: 30px;
+    height: 30px;
+  }
+
+  .dash-cta small {
+    display: none;
+  }
+}
+
+html[data-motion='off'] .dash-card,
+html[data-motion='reduced'] .dash-card {
+  transition: none;
+}

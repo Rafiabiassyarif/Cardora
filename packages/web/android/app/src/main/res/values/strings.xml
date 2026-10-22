@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Cardora</string>
+    <string name="title_activity_main">Cardora</string>
+    <string name="package_name">com.cardora.app</string>
+    <string name="custom_url_scheme">com.cardora.app</string>
+</resources>

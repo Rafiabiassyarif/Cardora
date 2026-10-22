@@ -1,0 +1,9 @@
+{
+  "appId": "com.cardora.app",
+  "appName": "Cardora",
+  "webDir": "dist",
+  "backgroundColor": "#101827",
+  "server": {
+    "androidScheme": "https"
+  }
+}

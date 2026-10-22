@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "username": "poker_sultan",
+    "passwordHash": "$2a$12$U/zvQ37wxAF4cwBZNQHr1eP8BxREWfoGlwhAG/oN4PsOhuM5yiqnC",
+    "displayName": "Sultan Poker",
+    "avatar": "🦊",
+    "createdAt": 1792469706519,
+    "stats": {},
+    "history": []
+  },
+  {
+    "id": 2,
+    "username": "uji_hermes878",
+    "passwordHash": "$2a$12$WgfcFBs2X0zY8G2jBmBeauIkwlWk3/FgQfUJ5aJSesYDD2SpqnhGS",
+    "displayName": "Hermes Uji",
+    "avatar": "🐵",
+    "createdAt": 1792483878868,
+    "stats": {},
+    "history": []
+  },
+  {
+    "id": 3,
+    "username": "qa8350",
+    "passwordHash": "$2a$12$4u1MV6uUe6o69lQkHM.uuOnxIZ/XKu8qa.vcjlGCvlslZLhXZIJzi",
+    "displayName": "QA Baru",
+    "avatar": "🐸",
+    "createdAt": 1792575054945,
+    "stats": {},
+    "history": []
+  }
+]

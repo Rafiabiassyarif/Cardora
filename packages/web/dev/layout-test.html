@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><title>Cardora layout test</title>
+<style>body{background:#000;color:#eee;font:13px monospace;margin:0;padding:12px}.wrap{display:flex;flex-wrap:wrap;gap:14px}iframe{border:1px solid #444;background:#101827}h3{margin:4px 0}pre{white-space:pre-wrap}</style>
+</head><body>
+<!-- Dev-only: render meja tiap game di beberapa ukuran perangkat & cek tumpukan/kliping secara programatik. -->
+<pre id="out">running…</pre>
+<div class="wrap" id="wrap"></div>
+<script>
+const DEVICES = [
+  ['iPhone SE', 375, 667], ['iPhone 14', 390, 844], ['iPhone 15 Pro Max', 430, 932], ['Android kecil', 360, 640],
+  ['iPad mini', 744, 1133], ['Laptop', 1280, 720], ['Ponsel landscape', 844, 390],
+];
+const GAMES = [['holdem', 'Main Cepat'], ['cangkulan', null], ['blackjack', null]];
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const lines = []; const out = document.getElementById('out');
+const log = s => { lines.push(s); out.textContent = lines.join('\n'); };
+let pass = 0, fail = 0;
+
+async function waitFor(doc, sel, ms = 6000) {
+  const t = Date.now();
+  while (Date.now() - t < ms) { const e = doc.querySelector(sel); if (e) return e; await sleep(50); }
+  return null;
+}
+const btn = (doc, re) => [...doc.querySelectorAll('button')].find(b => re.test(b.textContent));
+
+async function openGame(doc, gameId) {
+  if (gameId === 'holdem') { btn(doc, /Main Cepat/).click(); }
+  else {
+    btn(doc, /Pilih Game/).click();
+    await waitFor(doc, '.game-card');
+    const card = [...doc.querySelectorAll('.game-card')].find(c => c.textContent.includes(gameId === 'cangkulan' ? 'Cangkulan' : 'Blackjack'));
+    btn(card, /Mainkan/).click();
+    await waitFor(doc, '.btn-lg');
+    btn(doc, /Main vs Bot/).click();
+  }
+  await waitFor(doc, '.felt .me-area');
+  await sleep(gameId === 'blackjack' ? 300 : 900);
+}
+
+function check(doc, win) {
+  const r = e => e.getBoundingClientRect();
+  const W = win.innerWidth, H = win.innerHeight;
+  const problems = [];
+  const felt = doc.querySelector('.felt');
+  // 1) Tidak ada scroll horizontal halaman.
+  if (doc.documentElement.scrollWidth > W + 1) problems.push(`scroll horizontal ${doc.documentElement.scrollWidth}>${W}`);
+  // 2) Tombol aksi & kontrol di dalam layar dan ≥ 36px.
+  for (const b of doc.querySelectorAll('.dock .btn, .table-bar .btn')) {
+    const x = r(b);
+    if (x.bottom > H + 1 || x.right > W + 1 || x.left < -1) problems.push(`tombol keluar layar: ${b.textContent.trim()}`);
+    if (x.height < 36) problems.push(`tombol terlalu kecil (${Math.round(x.height)}px): ${b.textContent.trim()}`);
+  }
+  // 3) Blok utama di dalam meja tidak saling menimpa.
+  const blocks = [...doc.querySelectorAll('.felt .opponents .seat, .felt .center-area > *, .felt .me-area > .seat')];
+  for (let i = 0; i < blocks.length; i++) for (let j = i + 1; j < blocks.length; j++) {
+    const a = r(blocks[i]), b = r(blocks[j]);
+    if (blocks[i].contains(blocks[j]) || blocks[j].contains(blocks[i])) continue;
+    if (!(a.right <= b.left + 1 || a.left >= b.right - 1 || a.bottom <= b.top + 1 || a.top >= b.bottom - 1)) {
+      problems.push(`tumpang tindih: .${blocks[i].className.split(' ')[0]} vs .${blocks[j].className.split(' ')[0]}`);
+    }
+  }
+  // 4) Kartu milik pemain terlihat (boleh scroll di dalam meja, tapi meja tidak boleh memotong kartu permanen).
+  const mine = doc.querySelectorAll('.felt .me-area .pcard');
+  const fr = r(felt);
+  const scrollable = felt.scrollHeight > felt.clientHeight + 2;
+  for (const c of mine) { const x = r(c); if (!scrollable && x.bottom > fr.bottom + 1) problems.push('kartu pemain terpotong'); }
+  // 5) Teks tidak terlalu kecil.
+  for (const t of doc.querySelectorAll('.dock .btn, .seat-name')) {
+    const fs = parseFloat(win.getComputedStyle(t).fontSize);
+    if (fs < 11) problems.push(`teks terlalu kecil ${fs}px`);
+  }
+  return { problems: [...new Set(problems)], scrollable };
+}
+
+(async () => {
+  const wrap = document.getElementById('wrap');
+  for (const [gameId] of GAMES) {
+    for (const [name, w, h] of DEVICES) {
+      const f = document.createElement('iframe');
+      f.width = w; f.height = h; f.style.transform = 'scale(0.35)'; f.style.transformOrigin = '0 0';
+      const box = document.createElement('div'); box.style.width = (w * 0.35) + 'px'; box.style.height = (h * 0.35 + 20) + 'px';
+      box.innerHTML = `<h3>${gameId} · ${name}</h3>`; box.appendChild(f); wrap.appendChild(box);
+      f.src = '/?t=' + Date.now();
+      await new Promise(res => f.onload = res);
+      const doc = f.contentDocument, win = f.contentWindow;
+      await waitFor(doc, '.home-actions');
+      try {
+        await openGame(doc, gameId);
+        const { problems, scrollable } = check(doc, win);
+        if (problems.length) { fail++; log(`FAIL ${gameId} @ ${name} ${w}x${h}: ${problems.join('; ')}`); }
+        else { pass++; log(`ok   ${gameId} @ ${name} ${w}x${h}${scrollable ? ' (meja bisa digulir)' : ''}`); }
+      } catch (e) { fail++; log(`FAIL ${gameId} @ ${name}: ${e.message}`); }
+    }
+  }
+  log(`\n${pass} passed, ${fail} failed`);
+  document.title = `layout ${pass}/${pass + fail}`;
+})();
+</script>
+</body></html>

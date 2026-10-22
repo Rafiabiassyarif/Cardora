@@ -1,0 +1,261 @@
+/* ==========================================================================
+   fx.css — efek interaksi & suasana yang HALUS (tema soft light).
+   Aturan: gerak pendek (≤ 400ms untuk UI), easing lembut, palet tema, tanpa
+   warna neon/pelangi atau emoji. Semua mengikuti pengaturan animasi
+   (html[data-motion='off'|'reduced'] di styles.css mematikan/menyingkat).
+   Di-import paling akhir.
+   ========================================================================== */
+
+:root { --ease-soft: cubic-bezier(0.22, 0.8, 0.3, 1); }
+
+/* ---------- 1. Masuk layar: naik pelan + memudar ---------- */
+@keyframes fxPageIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.page, .landing-main, .auth-card { animation: fxPageIn 0.38s var(--ease-soft) backwards; }
+
+/* Daftar kartu muncul berurutan (stagger), dibatasi agar tidak lama. */
+@keyframes fxRise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+.game-card, .lgame, .lfeat, .stat, .quest-card, .member, .podium-item {
+  animation: fxRise 0.42s var(--ease-soft) backwards;
+}
+:is(.game-card, .lgame, .lfeat, .stat, .quest-card, .member):nth-child(2) { animation-delay: 40ms; }
+:is(.game-card, .lgame, .lfeat, .stat, .quest-card, .member):nth-child(3) { animation-delay: 80ms; }
+:is(.game-card, .lgame, .lfeat, .stat, .quest-card, .member):nth-child(4) { animation-delay: 120ms; }
+:is(.game-card, .lgame, .lfeat, .stat, .quest-card, .member):nth-child(5) { animation-delay: 160ms; }
+:is(.game-card, .lgame, .lfeat, .stat, .quest-card, .member):nth-child(6) { animation-delay: 200ms; }
+:is(.game-card, .lgame, .lfeat, .stat, .quest-card, .member):nth-child(n+7) { animation-delay: 240ms; }
+
+/* ---------- 2. Modal: latar memudar, panel naik halus ---------- */
+.modal-back { animation: fxFade 0.22s ease-out backwards; }
+.modal { animation: fxModalIn 0.32s var(--ease-soft) backwards; }
+@keyframes fxFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fxModalIn {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Toast meluncur dari kanan. */
+.toast { animation: fxToastIn 0.34s var(--ease-soft) backwards; }
+@keyframes fxToastIn {
+  from { opacity: 0; transform: translateX(18px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---------- 3. Riak sentuh pada tombol ---------- */
+.fx-ripple-wrap {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+}
+.fx-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.14;
+  transform: scale(0);
+  animation: fxRipple 0.6s ease-out forwards;
+}
+.btn-gold .fx-ripple, .lbtn-gold .fx-ripple { background: #fff; opacity: 0.28; }
+@keyframes fxRipple { to { transform: scale(1); opacity: 0; } }
+
+/* ---------- 4. Landing: ilustrasi meja miring mengikuti kursor ---------- */
+.hero-art { perspective: 1000px; }
+.hero-table {
+  transform: rotateX(calc(var(--tilt-y, 0) * 1deg)) rotateY(calc(var(--tilt-x, 0) * 1deg));
+  transition: transform 0.5s var(--ease-soft);
+  transform-style: preserve-3d;
+}
+.hero-card { box-shadow: 0 2px 4px rgba(70, 50, 30, 0.08), 0 calc(14px + var(--tilt-y, 0) * 1px) 26px rgba(70, 50, 30, 0.16); }
+
+/* ---------- 5. Meja: tekstur felt halus ---------- */
+.table-page .felt {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.15  0 0 0 0 0.3  0 0 0 0 0.2  0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(ellipse 60% 50% at 50% 35%, rgba(255, 255, 255, 0.35) 0%, transparent 65%),
+    radial-gradient(ellipse 85% 80% at 50% 45%, var(--felt-a) 0%, var(--felt-b) 55%, var(--felt-c) 100%),
+    linear-gradient(180deg, #E8D3B2 0%, #D7B993 55%, #C9A87F 100%);
+  background-origin: padding-box, padding-box, padding-box, border-box;
+  background-clip: padding-box, padding-box, padding-box, border-box;
+}
+
+/* Kursi yang sedang giliran: sorot lampu lembut di bawahnya. */
+.table-page .seat::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 32px;
+  width: 130px;
+  height: 90px;
+  transform: translate(-50%, -50%) scale(0.6);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 250, 238, 0.55), transparent);
+  opacity: 0;
+  transition: opacity 0.45s ease, transform 0.45s var(--ease-soft);
+  pointer-events: none;
+  z-index: -1;
+}
+.table-page .seat.turn::before { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.table-page .me-area .seat::before { left: 30px; top: 50%; }
+
+/* Tombol aksi muncul pelan saat giliranmu tiba. */
+.table-page .dock .actions,
+.table-page .dock .raise-row { animation: fxDockIn 0.32s var(--ease-soft) backwards; }
+.table-page .dock .raise-row + .actions { animation-delay: 50ms; }
+@keyframes fxDockIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Kartu kombinasi pemenang: kilau tipis menyapu sekali. */
+.pcard.combo { overflow: hidden; }
+.pcard.combo::before {
+  content: '';
+  position: absolute;
+  inset: -20% -60%;
+  background: linear-gradient(105deg, transparent 40%, rgba(255, 246, 225, 0.85) 50%, transparent 60%);
+  transform: translateX(-70%);
+  animation: fxSheen 1.4s 0.3s ease-in-out backwards;
+  pointer-events: none;
+  z-index: 3;
+}
+@keyframes fxSheen {
+  from { transform: translateX(-70%); }
+  to { transform: translateX(70%); }
+}
+.pcard.combo:not(:hover) { translate: 0 -4px; transition: translate 0.4s var(--ease-soft), box-shadow 0.4s ease; }
+
+/* Banner pemenang: muncul lembut + kilau sekali. */
+.winner-banner {
+  position: relative;
+  overflow: hidden;
+  animation: fxBannerIn 0.5s var(--ease-soft) backwards;
+}
+.winner-banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.7) 50%, transparent 65%);
+  transform: translateX(-110%);
+  animation: fxBannerSheen 1.6s 0.45s ease-in-out forwards;
+  pointer-events: none;
+}
+@keyframes fxBannerIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fxBannerSheen { to { transform: translateX(110%); } }
+
+/* ---------- 6. Angka berjalan: lebar digit tetap agar tidak "goyang" ---------- */
+.num-anim { font-variant-numeric: tabular-nums; }
+
+/* ---------- 7. Pil "+chip" yang naik di atas kursi ---------- */
+.gain-float {
+  /* Di samping kanan avatar (bukan di atasnya) agar tidak terpotong tepi atas meja. */
+  position: absolute;
+  left: calc(50% + 22px);
+  top: 10px;
+  z-index: 20;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--sage-soft, #E2EEE4);
+  border: 1px solid var(--sage-line, #C8DECD);
+  color: var(--sage-text, #3F6A4D);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(70, 50, 30, 0.12);
+  pointer-events: none;
+  animation: fxGain 2s var(--ease-soft) forwards;
+}
+.me-area .gain-float { left: 44px; top: -4px; }
+@keyframes fxGain {
+  0% { opacity: 0; transform: translate(0, 8px) scale(0.92); }
+  15% { opacity: 1; transform: translate(0, 0) scale(1); }
+  78% { opacity: 1; transform: translate(0, -6px); }
+  100% { opacity: 0; transform: translate(0, -12px); }
+}
+
+/* ---------- 8. Chip mengalir dari pot ---------- */
+.chip-burst i { font-size: 0; }
+.chip-disc {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, var(--c) 0 42%, transparent 43%),
+    repeating-conic-gradient(var(--c) 0 22deg, #FFFDF9 22deg 45deg);
+  box-shadow: 0 0 0 1.5px var(--c), 0 3px 6px rgba(70, 50, 30, 0.22);
+  animation: fxChipFly 1.25s var(--ease-soft) forwards;
+}
+@keyframes fxChipFly {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+  18% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(0.9) rotate(160deg); }
+}
+.chip-burst-ring {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  border: 2px solid rgba(226, 190, 122, 0.7);
+  transform: translate(-50%, -50%) scale(0.2);
+  opacity: 0;
+  animation: fxRing 0.9s ease-out forwards;
+}
+@keyframes fxRing {
+  0% { opacity: 0.9; transform: translate(-50%, -50%) scale(0.2); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+}
+.chip-burst-label {
+  color: var(--terra-text, #A2533A);
+  font-weight: 800;
+  font-size: 1.35rem;
+  text-shadow: 0 1px 0 #fff, 0 4px 14px rgba(255, 250, 238, 0.9);
+}
+
+/* ---------- 9. Konfeti kertas: jatuh pelan sambil berayun & berkilat ---------- */
+.confetti i {
+  top: -28px;
+  border-radius: 2px;
+  opacity: 0.9;
+  animation-name: fxPaperFall;
+  animation-timing-function: linear;
+  animation-fill-mode: backwards;
+}
+@keyframes fxPaperFall {
+  0% { transform: translate3d(0, 0, 0) rotateZ(0) rotateX(0); opacity: 0; }
+  6% { opacity: 0.95; }
+  25% { transform: translate3d(calc(var(--drift) * 0.35), 26vh, 0) rotateZ(calc(var(--spin) * 0.25)) rotateX(180deg); }
+  50% { transform: translate3d(calc(var(--drift) * -0.1), 54vh, 0) rotateZ(calc(var(--spin) * 0.5)) rotateX(360deg); }
+  75% { transform: translate3d(calc(var(--drift) * 0.7), 82vh, 0) rotateZ(calc(var(--spin) * 0.75)) rotateX(540deg); opacity: 0.9; }
+  100% { transform: translate3d(var(--drift), 110vh, 0) rotateZ(var(--spin)) rotateX(720deg); opacity: 0; }
+}
+.confetti-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 45% at 50% 0%, rgba(255, 236, 200, 0.55), transparent 70%);
+  animation: fxGlow 3.6s ease-out forwards;
+}
+@keyframes fxGlow {
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Gerak dikurangi / mati: efek dekoratif tidak ditampilkan. */
+html[data-motion='off'] :is(.gain-float, .fx-ripple-wrap, .confetti, .chip-burst),
+html[data-motion='reduced'] :is(.fx-ripple-wrap, .confetti, .chip-burst) { display: none; }
+html[data-motion='off'] .hero-table, html[data-motion='reduced'] .hero-table { transform: none; }

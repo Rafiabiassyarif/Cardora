@@ -1,0 +1,35 @@
+{
+  "name": "kuypoker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cardora — platform game kartu multiplayer (web, iOS, Android).",
+  "workspaces": [
+    "packages/engine",
+    "packages/server",
+    "packages/web"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,web -c green,yellow \"npm run dev -w @kuypoker/server\" \"npm run dev -w @kuypoker/web\"",
+    "dev:server": "npm run dev -w @kuypoker/server",
+    "dev:web": "npm run dev -w @kuypoker/web",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p packages/engine --noEmit && tsc -p packages/server --noEmit && tsc -p packages/web --noEmit",
+    "build": "npm run build -w @kuypoker/web && npm run build -w @kuypoker/server",
+    "start": "npm run start -w @kuypoker/server",
+    "db:migrate": "npm run db:migrate -w @kuypoker/server",
+    "icons": "node packages/web/scripts/make-icons.mjs",
+    "cap:sync": "npm run build -w @kuypoker/web && npx --prefix packages/web cap sync",
+    "cap:android": "npm run build -w @kuypoker/web && npx --prefix packages/web cap add android && npx --prefix packages/web cap open android",
+    "cap:ios": "npm run build -w @kuypoker/web && npx --prefix packages/web cap add ios && npx --prefix packages/web cap open ios",
+    "android:debug": "npm run cap:sync && cd packages/web/android && gradlew assembleDebug"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

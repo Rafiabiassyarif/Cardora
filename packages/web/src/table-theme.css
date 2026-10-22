@@ -1,0 +1,1234 @@
+/* ==========================================================================
+   table-theme.css — TEMA MEJA "SOFT LIGHT": felt hijau pastel, rim kayu oak
+   muda, kursi krem, tombol aksi warna lembut. Di-import SETELAH styles.css &
+   app-theme.css. Aturan di-scope ke .table-page sehingga layar menu tidak
+   terpengaruh. Struktur (lengkungan lawan, ukuran kursi, media query) dijaga.
+   ========================================================================== */
+
+body:has(.table-page) {
+  background:
+    radial-gradient(ellipse 80% 55% at 50% -5%, rgba(255, 255, 255, 0.7) 0%, transparent 60%),
+    radial-gradient(circle at 5% 100%, rgba(200, 224, 206, 0.5) 0, transparent 35%),
+    radial-gradient(circle at 95% 100%, rgba(242, 205, 184, 0.45) 0, transparent 35%),
+    #F1E9DC fixed;
+}
+
+.table-page .table-bar .title {
+  color: var(--ink);
+  text-shadow: none;
+}
+
+.table-page .table-bar .title .muted {
+  color: var(--ink-3);
+}
+
+/* Tombol ikon bar atas: bulat putih. */
+.table-page .table-bar .btn.icon-btn {
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--hair-2);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+  color: var(--ink-2);
+}
+
+.table-page .table-bar .btn.icon-btn:hover:not(:disabled) {
+  background: #FFF6EA;
+  color: var(--ink);
+}
+
+.table-page .table-bar .btn.icon-btn:active:not(:disabled) {
+  transform: scale(0.96);
+  box-shadow: none;
+}
+
+.table-page .table-bar .badge.ok {
+  background: var(--sage-soft);
+  color: var(--sage-text);
+  border: 1px solid var(--sage-line);
+  font-weight: 800;
+  box-shadow: none;
+}
+
+/* --- Meja oval: felt pastel + rim oak muda + garis krem --- */
+.table-page .felt {
+  --felt-a: #C6E1CD;
+  --felt-b: #AACFB6;
+  --felt-c: #94BFA3;
+  --felt-ink: rgba(36, 66, 48, 0.78);
+  border: 14px solid transparent;
+  border-radius: 170px / 140px;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 35%, rgba(255, 255, 255, 0.35) 0%, transparent 65%) padding-box,
+    radial-gradient(ellipse 85% 80% at 50% 45%, var(--felt-a) 0%, var(--felt-b) 55%, var(--felt-c) 100%) padding-box,
+    linear-gradient(180deg, #E8D3B2 0%, #D7B993 55%, #C9A87F 100%) border-box;
+  box-shadow:
+    0 0 0 2px #F6EBDA,
+    0 0 0 3px #DCC6A6,
+    0 14px 34px rgba(110, 85, 55, 0.16),
+    0 4px 10px rgba(110, 85, 55, 0.08),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.35),
+    inset 0 10px 26px rgba(40, 80, 55, 0.12);
+  padding: 14px 40px;
+  margin: 4px 8px 14px;
+  scrollbar-width: none;
+}
+
+.table-page .felt::-webkit-scrollbar {
+  display: none;
+}
+
+/* Varian warna felt (Pengaturan → tema meja) — versi pastel. */
+.table-page .felt[data-theme='sapphire'] {
+  --felt-a: #CFE0EC;
+  --felt-b: #B2CBDD;
+  --felt-c: #9BB8CE;
+  --felt-ink: rgba(35, 60, 85, 0.8);
+}
+
+.table-page .felt[data-theme='crimson'] {
+  --felt-a: #F0D6CF;
+  --felt-b: #E2BBB1;
+  --felt-c: #D3A69B;
+  --felt-ink: rgba(95, 45, 38, 0.8);
+}
+
+.table-page .felt[data-theme='obsidian'] {
+  --felt-a: #E2DACF;
+  --felt-b: #CFC4B5;
+  --felt-c: #BCAF9E;
+  --felt-ink: rgba(70, 58, 45, 0.8);
+}
+
+/* Garis dalam meja. */
+.table-page .felt::after {
+  inset: 16px 30px;
+  border-radius: 150px / 120px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+}
+
+/* Tanda air nama di tengah meja (sangat tipis). */
+.table-page .felt::before {
+  content: 'CARDORA';
+  font-size: clamp(2rem, 7vw, 4.4rem);
+  letter-spacing: 0.18em;
+  color: rgba(255, 255, 255, 0.2);
+  background: none;
+}
+
+/* --- Lawan melengkung mengikuti meja --- */
+.table-page .opponents.arc {
+  justify-content: space-around;
+  flex-wrap: nowrap;
+  gap: 4px;
+  padding: 0 10px;
+}
+
+.table-page .opp-slot {
+  transform: translateY(calc(var(--drop, 0) * 64px));
+  min-width: 0;
+}
+
+/* --- Kursi pemain: avatar bulat krem + pill nama/chip --- */
+.table-page .seat {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 2px 4px;
+  gap: 0;
+  min-width: 96px;
+  transition: transform 0.25s ease, opacity 0.25s ease, filter 0.25s ease;
+}
+
+.table-page .seat.turn {
+  box-shadow: none;
+  transform: translateY(-3px);
+}
+
+.table-page .seat .row {
+  position: relative;
+}
+
+.table-page .seat .avatar {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  font-size: 1.8rem;
+  border: 3px solid var(--paper);
+  background: radial-gradient(circle at 35% 30%, #FFFFFF 0%, #F6EFE5 70%, #EBDFCF 100%);
+  box-shadow: 0 0 0 1px rgba(150, 120, 85, 0.25), 0 4px 10px rgba(70, 50, 30, 0.14);
+  isolation: isolate;
+  animation: none;
+}
+
+/* Giliran: cincin terracotta yang "bernapas" pelan (dekoratif). */
+.table-page .seat .avatar.turn::before {
+  content: '';
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+  border: 3px solid rgba(194, 105, 74, 0.75);
+  background: none;
+  -webkit-mask: none;
+  mask: none;
+  animation: softPulse 1.8s ease-in-out infinite;
+  z-index: -1;
+}
+
+.table-page .seat .avatar.turn {
+  box-shadow: 0 0 0 1px rgba(194, 105, 74, 0.35), 0 6px 16px rgba(194, 105, 74, 0.25);
+}
+
+@keyframes softPulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+
+  50% {
+    transform: scale(1.08);
+    opacity: 0.45;
+  }
+}
+
+@keyframes spinRing {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.table-page .seat-text {
+  margin-top: -8px;
+  position: relative;
+  z-index: 2;
+  align-items: center;
+  min-width: 84px;
+  max-width: 130px;
+  padding: 3px 12px 4px;
+  border-radius: 999px;
+  background: var(--paper);
+  border: 1px solid var(--hair);
+  box-shadow: 0 2px 6px rgba(70, 50, 30, 0.12);
+}
+
+.table-page .seat-name {
+  color: var(--ink);
+  font-size: 0.74rem;
+  font-weight: 700;
+  max-width: 104px;
+  line-height: 1.3;
+}
+
+.table-page .seat-sub {
+  color: var(--butter-text);
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-shadow: none;
+}
+
+.table-page .seat.turn .seat-text {
+  background: var(--terra-soft);
+  border-color: var(--terra-line);
+}
+
+.table-page .seat.turn .seat-name {
+  color: var(--terra-text);
+  text-shadow: none;
+}
+
+.table-page .seat.turn .seat-sub {
+  color: var(--terra-text);
+  text-shadow: none;
+}
+
+.table-page .seat.folded {
+  opacity: 0.5;
+  filter: grayscale(0.7);
+}
+
+/* Tanda D / SB / BB: koin putih kecil di pojok avatar. */
+.table-page .seat-tag {
+  position: absolute;
+  right: -10px;
+  bottom: -2px;
+  z-index: 3;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink-2);
+  border: 1.5px solid #E2BE7A;
+  font-size: 0.66rem;
+  font-weight: 800;
+  box-shadow: 0 1px 3px rgba(70, 50, 30, 0.2);
+}
+
+.table-page .seat .cards {
+  margin-top: 4px;
+}
+
+/* Label tambahan di bawah kursi (Bet, total Blackjack, dll). */
+.table-page .seat>.seat-sub,
+.table-page .seat>.small,
+.table-page .seat>span:not(.seat-sub):not(.badge) {
+  margin-top: 3px;
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: rgba(255, 253, 249, 0.88);
+  color: var(--ink-2);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-shadow: none;
+}
+
+/* Kursi kamu (bawah): avatar besar + pill di samping. */
+.table-page .me-area .seat {
+  flex-direction: row;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+}
+
+.table-page .me-area .seat .avatar {
+  width: 60px;
+  height: 60px;
+  font-size: 2rem;
+}
+
+.table-page .me-area .seat-text {
+  margin: 0 0 0 -12px;
+  padding: 4px 14px 5px 18px;
+  align-items: flex-start;
+  max-width: 220px;
+  z-index: 1;
+}
+
+.table-page .me-area .seat-name {
+  font-size: 0.85rem;
+  max-width: 190px;
+}
+
+/* --- Kartu: putih gading lembut --- */
+.pcard {
+  border-radius: calc(var(--card-w) * 0.13);
+}
+
+.pcard .r {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.pcard .card-center {
+  font-size: calc(var(--card-w) * 0.56);
+  filter: none;
+}
+
+.pcard.ace .card-center {
+  font-size: calc(var(--card-w) * 0.72);
+}
+
+/* Kartu wajah J/Q/K: lencana bulat warna pastel. */
+.pcard .card-face {
+  display: grid;
+  place-items: center;
+  width: calc(var(--card-w) * 0.66);
+  height: calc(var(--card-w) * 0.66);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #FFFBF0 0%, #F5E3BC 70%, #EBD39F 100%);
+  box-shadow: inset 0 -2px 0 rgba(120, 90, 40, 0.08);
+  opacity: 1;
+}
+
+.pcard.red .card-face {
+  background: radial-gradient(circle at 35% 30%, #FFF6F3 0%, #F6DCD4 70%, #ECC4B8 100%);
+}
+
+.pcard .face-art {
+  font-size: calc(var(--card-w) * 0.4);
+  line-height: 1;
+}
+
+.pcard .face-suit {
+  position: absolute;
+  right: -6%;
+  bottom: -6%;
+  font-size: calc(var(--card-w) * 0.2);
+  line-height: 1;
+}
+
+.pcard.small .card-face {
+  width: calc(var(--card-w) * 0.6);
+  height: calc(var(--card-w) * 0.6);
+}
+
+.pcard.small .face-suit {
+  display: none;
+}
+
+/* Punggung kartu: terracotta lembut, bingkai krem, pola halus, emblem krem. */
+.pcard.back {
+  background:
+    radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.22) 0%, transparent 45%),
+    linear-gradient(160deg, #D6886B 0%, #C2694A 60%, #A9583C 100%);
+  border: 3px solid #FFFCF6;
+  box-shadow: 0 0 0 1px rgba(150, 90, 60, 0.25), 0 4px 10px rgba(70, 50, 30, 0.14);
+}
+
+.pcard.back .card-back-pattern {
+  inset: 3px;
+  border: 1px solid rgba(255, 248, 238, 0.55);
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 248, 238, 0.12) 0 2px, transparent 2px 8px),
+    repeating-linear-gradient(-45deg, rgba(255, 248, 238, 0.12) 0 2px, transparent 2px 8px);
+}
+
+.pcard.back .card-back-emblem {
+  display: grid;
+  place-items: center;
+  width: calc(var(--card-w) * 0.5);
+  height: calc(var(--card-w) * 0.5);
+  border-radius: 50%;
+  font-size: calc(var(--card-w) * 0.28);
+  color: #B25D40;
+  background: #FFF8EE;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 1px 3px rgba(80, 40, 20, 0.2);
+  filter: none;
+}
+
+.pcard.slot {
+  background: rgba(255, 255, 255, 0.22);
+  border: 2px dashed rgba(255, 255, 255, 0.75);
+  box-shadow: none;
+}
+
+.pcard.disabled {
+  filter: saturate(0.35) brightness(0.93) contrast(0.92);
+  opacity: 1;
+}
+
+/* --- Pot: pill krem dengan koin --- */
+.table-page .pot {
+  align-self: center;
+  background: var(--paper);
+  border: 1px solid var(--butter-line);
+  color: var(--butter-text);
+  font-size: 1.05rem;
+  font-weight: 800;
+  padding: 6px 18px 6px 12px;
+  box-shadow: 0 4px 12px rgba(70, 50, 30, 0.12);
+  text-shadow: none;
+}
+
+.table-page .winner-banner {
+  background: var(--butter);
+  color: var(--butter-text);
+  border: 1px solid var(--butter-line);
+  border-radius: 999px;
+  font-weight: 800;
+  padding: 8px 22px;
+  text-shadow: none;
+  box-shadow: 0 6px 18px rgba(130, 95, 35, 0.18);
+}
+
+/* --- Tombol aksi di dock: datar & lembut, warna dibedakan per aksi --- */
+.table-page .dock .btn {
+  position: relative;
+  overflow: hidden;
+  min-height: 50px;
+  border: 1px solid var(--sky-line);
+  border-radius: 16px;
+  color: var(--sky-text);
+  font-weight: 800;
+  font-size: 0.98rem;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  text-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--sky-soft);
+  box-shadow: var(--shadow-sm);
+}
+
+.table-page .dock .btn::after {
+  display: none;
+  content: none;
+}
+
+.table-page .dock .btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: none;
+  background: #D7E4EF;
+  border-color: #B8CDE0;
+  box-shadow: var(--shadow);
+}
+
+.table-page .dock .btn:active:not(:disabled) {
+  transform: scale(0.98);
+  box-shadow: none;
+}
+
+.table-page .dock .btn-danger,
+.table-page .dock .btn-danger:hover:not(:disabled) {
+  color: var(--rose-text);
+  border-color: var(--rose-line);
+  background: var(--rose-soft);
+}
+
+.table-page .dock .btn-danger:hover:not(:disabled) {
+  background: #F2D5D1;
+}
+
+.table-page .dock .btn-emerald,
+.table-page .dock .btn-emerald:hover:not(:disabled) {
+  color: var(--sage-text);
+  border-color: var(--sage-line);
+  background: var(--sage-soft);
+}
+
+.table-page .dock .btn-emerald:hover:not(:disabled) {
+  background: #D6E8DA;
+}
+
+.table-page .dock .btn-gold,
+.table-page .dock .btn-gold:hover:not(:disabled) {
+  color: #fff;
+  border-color: transparent;
+  background: var(--terra);
+  box-shadow: 0 6px 16px rgba(194, 105, 74, 0.22);
+}
+
+.table-page .dock .btn-gold:hover:not(:disabled) {
+  background: var(--terra-2);
+}
+
+.table-page .dock .btn:disabled {
+  filter: saturate(0.3);
+  opacity: 0.5;
+  box-shadow: none;
+}
+
+.table-page .dock .btn-ghost,
+.table-page .dock .btn-ghost:hover:not(:disabled) {
+  min-height: 30px;
+  border: 0;
+  color: var(--ink-2);
+  background: rgba(255, 253, 249, 0.7);
+  box-shadow: none;
+  text-transform: none;
+}
+
+/* Panel raise: kapsul krem. */
+.table-page .raise-row {
+  background: var(--paper);
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  padding: 6px 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.table-page .raise-row input[type=range] {
+  accent-color: var(--terra);
+}
+
+.table-page .raise-row .input {
+  min-height: 38px;
+}
+
+.table-page .raise-row .chip,
+.table-page .hand-toolbar .chip {
+  color: var(--ink-2);
+  font-weight: 700;
+  border: 1px solid var(--hair-2);
+  background: var(--paper);
+  box-shadow: none;
+}
+
+.table-page .raise-row .chip.on,
+.table-page .hand-toolbar .chip.on {
+  color: var(--terra-text);
+  background: var(--terra-soft);
+  border-color: var(--terra-line);
+  box-shadow: none;
+}
+
+.table-page .deck-count {
+  background: var(--paper);
+  border: 1px solid var(--butter-line);
+  color: var(--butter-text);
+}
+
+/* Teks bantu di atas felt: warna tinta sesuai tema felt (bukan putih). */
+.table-page .felt .muted:not(.pcard),
+.table-page .felt .small:not(.pcard) {
+  color: var(--felt-ink);
+  text-shadow: none;
+}
+
+/* --- HUD asisten poker --- */
+.table-page .hand-anal-badge,
+.table-page .equity-meter,
+.table-page .pot-odds-badge {
+  background: rgba(255, 253, 249, 0.94);
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+
+.table-page .hand-anal-badge .anal-title {
+  color: var(--terra-text);
+}
+
+.table-page .equity-meter .equity-bar-bg,
+.equity-bar-bg {
+  background: var(--cream-2);
+}
+
+.equity-label b,
+.pot-odds-badge b {
+  color: var(--ink);
+}
+
+.table-page .call-advice,
+.call-advice {
+  color: var(--sage-text);
+  background: var(--sage-soft);
+}
+
+/* Kartu kecil lawan yang TERBUKA ditumpuk lebih longgar agar angkanya terbaca. */
+.table-page .cards.overlap>.pcard:not(.back)+.pcard:not(.back) {
+  margin-left: calc(var(--card-w) * -0.32);
+}
+
+/* Layar pendek: rim & lengkungan sedikit lebih tipis. */
+@media (max-height: 820px) {
+  .table-page .felt {
+    border-width: 10px;
+    padding: 12px 34px 12px;
+    margin-bottom: 10px;
+  }
+
+  .table-page .pcard.small {
+    --card-w: 34px;
+  }
+
+  .table-page .opp-slot {
+    transform: translateY(calc(var(--drop, 0) * 48px));
+  }
+
+  :root {
+    --card-w: min(clamp(44px, 12vw, 62px), 7.6vh);
+  }
+
+  .table-page .seat .avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 1.55rem;
+  }
+
+  .table-page .me-area .seat .avatar {
+    width: 52px;
+    height: 52px;
+  }
+
+  .table-page .dock .btn {
+    min-height: 46px;
+  }
+}
+
+/* Layar sempit (HP): rim tipis, sudut lebih kecil. */
+@media (max-width: 560px) {
+  .table-page .felt {
+    border-radius: 60px / 50px;
+    border-width: 8px;
+    padding: 16px 10px 8px;
+    margin: 2px 2px 10px;
+  }
+
+  .table-page .felt::after {
+    inset: 8px 12px;
+    border-radius: 52px / 42px;
+  }
+
+  .table-page .seat {
+    min-width: 74px;
+  }
+
+  .table-page .opp-slot {
+    transform: translateY(calc(var(--drop, 0) * 24px));
+  }
+
+  .table-page .pcard.small {
+    --card-w: 26px;
+  }
+
+  .table-page .cards.overlap>.pcard.back+.pcard.back {
+    margin-left: calc(var(--card-w) * -0.72);
+  }
+
+  .table-page .table-bar {
+    gap: 6px;
+    padding: 4px 2px;
+  }
+
+  .table-page .table-bar .btn.icon-btn {
+    width: 34px;
+    height: 34px;
+    min-height: 34px;
+    font-size: 0.85rem;
+  }
+
+  .table-page .table-bar .title {
+    font-size: 0.92rem;
+    min-width: 0;
+  }
+
+  .table-page .table-bar .title .muted {
+    display: none;
+  }
+
+  .table-page .table-bar .badge {
+    padding: 3px 7px;
+    font-size: 0.68rem;
+    white-space: nowrap;
+  }
+
+  .table-page .seat .avatar {
+    width: 44px;
+    height: 44px;
+    font-size: 1.4rem;
+  }
+}
+
+/* HP: kapsul raise jadi kartu bersudut (isinya terlipat 2 baris), tombol aksi 2×2. */
+@media (max-width: 560px) {
+  .table-page .raise-row {
+    border-radius: 20px;
+    padding: 6px 12px 8px;
+  }
+
+  .table-page .dock .actions .btn {
+    flex: 1 1 calc(50% - 8px);
+    max-width: none;
+  }
+}
+
+/* HP kecil: giliran sudah ditandai cincin avatar + countdown → badge "Giliranmu" disembunyikan. */
+@media (max-width: 420px) {
+  .table-page .table-bar .badge.ok {
+    display: none;
+  }
+}
+
+/* Gerak dikurangi: matikan denyut cincin giliran. */
+html[data-motion='off'] .table-page .seat .avatar.turn::before,
+html[data-motion='reduced'] .table-page .seat .avatar.turn::before {
+  animation: none;
+}
+
+/* ==========================================================================
+   Meja: animasi & perbaikan tata letak (tema soft light)
+   ========================================================================== */
+
+/* ---------- Kartu wajah J/Q/K: bingkai potret lembut ---------- */
+.pcard .card-center.card-face {
+  position: absolute;
+  inset: 20% 17%;
+  width: auto;
+  height: auto;
+  transform: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: calc(var(--card-w) * 0.07);
+  background: linear-gradient(160deg, #FFF8E8 0%, #F5E3BC 100%);
+  box-shadow: inset 0 0 0 1px rgba(160, 120, 60, 0.28), inset 0 0 0 3px #FFFDF6, inset 0 0 0 4px rgba(160, 120, 60, 0.18);
+}
+
+.pcard.red .card-center.card-face {
+  background: linear-gradient(160deg, #FFF4F0 0%, #F6DCD4 100%);
+  box-shadow: inset 0 0 0 1px rgba(170, 80, 60, 0.25), inset 0 0 0 3px #FFFDF8, inset 0 0 0 4px rgba(170, 80, 60, 0.16);
+}
+
+.pcard .card-center.card-face .face-emblem {
+  width: auto;
+  height: auto;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.pcard .card-center.card-face .face-rank {
+  font-size: calc(var(--card-w) * 0.34);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.pcard .card-center.card-face .face-suit {
+  position: static;
+  font-size: calc(var(--card-w) * 0.2);
+  line-height: 1;
+  margin: 0;
+}
+
+.pcard.small .card-center.card-face {
+  inset: 22% 16%;
+}
+
+.pcard.small .card-center.card-face .face-suit {
+  display: none;
+}
+
+/* ---------- Area trik Cangkulan ---------- */
+.trick-board {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  padding: 14px 22px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+}
+
+.trick-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-width: 200px;
+}
+
+.trick-cards {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: calc(var(--card-w) * 1.45 + 20px);
+}
+
+.trick-play {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.trick-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--felt-ink, rgba(36, 66, 48, 0.8));
+  max-width: calc(var(--card-w) * 1.3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trick-empty {
+  align-self: center;
+  font-size: 0.86rem;
+  color: var(--felt-ink, rgba(36, 66, 48, 0.8));
+}
+
+.trick-status {
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: rgba(255, 253, 249, 0.85);
+  color: var(--ink-2);
+  font-size: 0.8rem;
+  box-shadow: 0 2px 6px rgba(70, 50, 30, 0.08);
+}
+
+.trick-status b {
+  color: var(--ink);
+}
+
+/* Dek yang bisa diketuk untuk nyangkul */
+button.deck-stack {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.deck-stack.can-draw .deck-layers {
+  border-radius: calc(var(--card-w) * 0.13);
+  animation: deckGlow 1.8s ease-in-out infinite;
+}
+
+.deck-stack.can-draw:hover .deck-layer:first-child {
+  transform: translateY(-4px);
+  transition: transform 0.2s ease;
+}
+
+.deck-stack.can-draw .deck-count {
+  background: var(--terra);
+  color: #fff;
+  border-color: transparent;
+}
+
+@keyframes deckGlow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(194, 105, 74, 0);
+  }
+
+  50% {
+    box-shadow: 0 0 0 6px rgba(194, 105, 74, 0.28);
+  }
+}
+
+.deck-stack:focus-visible {
+  outline: 3px solid rgba(194, 105, 74, 0.4);
+  outline-offset: 4px;
+  border-radius: 10px;
+}
+
+/* ---------- Dock: tinggi tetap + petunjuk berupa pil ---------- */
+.table-page .dock {
+  min-height: 58px;
+  justify-content: center;
+  padding: 6px 0 2px;
+}
+
+.table-page .dock:empty {
+  display: flex;
+}
+
+.dock-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border-radius: 999px;
+  background: var(--paper);
+  border: 1px solid var(--hair);
+  color: var(--ink-2);
+  font-size: 0.9rem;
+  box-shadow: var(--shadow-sm);
+  animation: fxDockIn 0.32s var(--ease-soft, ease) backwards;
+}
+
+.dock-hint b {
+  color: var(--terra-text);
+}
+
+.dock-hint.muted-hint {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: var(--ink-3);
+}
+
+.dock-hint.muted-hint::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink-3);
+  animation: waitDot 1.2s ease-in-out infinite;
+}
+
+@keyframes waitDot {
+
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ---------- Chip terbang (taruhan → pot) ---------- */
+.fly-chip {
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, #E2BE7A 0 40%, transparent 41%),
+    repeating-conic-gradient(#C2694A 0 22deg, #FFFDF9 22deg 45deg);
+  box-shadow: 0 0 0 1.5px #C2694A, 0 3px 6px rgba(70, 50, 30, 0.25);
+}
+
+/* ---------- Kilau "Giliranmu" saat giliran tiba ---------- */
+.turn-flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: clamp(140px, 22%, 190px);
+  z-index: 6;
+  background: radial-gradient(ellipse 55% 35% at 50% 100%, rgba(255, 244, 222, 0.75), transparent 70%);
+  animation: turnFlash 1.6s ease-out forwards;
+}
+
+.turn-flash span {
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: rgba(255, 253, 249, 0.92);
+  color: var(--terra-text);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  box-shadow: 0 6px 18px rgba(70, 50, 30, 0.14);
+  animation: turnPill 1.6s var(--ease-soft, ease) forwards;
+}
+
+@keyframes turnFlash {
+  0% {
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes turnPill {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+
+  20% {
+    opacity: 1;
+    transform: none;
+  }
+
+  75% {
+    opacity: 1;
+    transform: none;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+/* ---------- Popover obrolan: buka KE BAWAH, rata kanan (sebelumnya terbuka ke atas, keluar layar) ---------- */
+.table-bar .emote-popover {
+  top: calc(100% + 10px);
+  bottom: auto;
+  left: auto;
+  right: 0;
+  width: min(320px, calc(100vw - 24px));
+  z-index: 120;
+  padding: 14px;
+  border-radius: 18px;
+  transform-origin: top right;
+  animation: fxModalIn 0.26s var(--ease-soft, ease) backwards;
+}
+
+.table-bar .emote-popover .emote-grid {
+  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+}
+
+.table-bar .emote-popover .emote-btn {
+  width: 100%;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.table-bar .emote-popover .emote-btn:hover {
+  transform: translateY(-2px) scale(1.06);
+}
+
+.table-bar .emote-popover .quick-chat-list {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 150px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.table-bar .emote-popover .chat-pill {
+  flex: 0 1 auto;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Gelembung chat di atas kursi: muncul lembut ---------- */
+.floating-bubble {
+  animation: bubbleIn 0.3s var(--ease-soft, ease) backwards;
+}
+
+@keyframes bubbleIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px) scale(0.92);
+  }
+}
+
+/* ---------- Blackjack: sepatu kartu di sebelah bandar ---------- */
+.bj-table {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.bj-shoe {
+  position: relative;
+  width: var(--card-w);
+  height: calc(var(--card-w) * 1.4);
+}
+
+.bj-shoe .pcard {
+  position: absolute;
+  inset: 0;
+  animation: none;
+}
+
+.bj-shoe .pcard+.pcard {
+  transform: translate(-3px, -3px);
+}
+
+.bj-dealer {
+  min-height: calc(var(--card-w) * 1.4);
+  align-items: center;
+}
+
+/* ---------- Tata letak: kursi kamu di samping kartu tangan (layar lebar) ---------- */
+@media (min-width: 760px) {
+  .table-page .me-area:has(> .player-hand) {
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 18px;
+  }
+
+  .table-page .me-area:has(> .player-hand)>.seat {
+    margin-bottom: 18px;
+  }
+
+  .table-page .me-area>.player-hand {
+    width: auto;
+  }
+}
+
+.table-page .felt {
+  padding-bottom: 22px;
+}
+
+@media (max-width: 560px) {
+  .turn-flash {
+    padding-bottom: 46%;
+  }
+
+  .trick-board {
+    gap: 14px;
+    padding: 10px 12px;
+  }
+
+  .trick-zone {
+    min-width: 0;
+  }
+
+  .trick-cards {
+    gap: 6px;
+  }
+}
+
+/* Hormati pengaturan gerak */
+html[data-motion='off'] .turn-flash,
+html[data-motion='reduced'] .turn-flash {
+  display: none;
+}
+
+html[data-motion='off'] .deck-stack.can-draw .deck-layers {
+  animation: none;
+  box-shadow: 0 0 0 4px rgba(194, 105, 74, 0.3);
+}
+
+/* Tombol obrolan saat ada pesan baru: ikon tetap terlihat, ditandai titik + cincin lembut. */
+.table-bar .btn.icon-btn.has-new {
+  color: var(--terra-text);
+  border-color: var(--terra-line);
+  box-shadow: 0 0 0 3px rgba(194, 105, 74, 0.15);
+}
+/* ---------- Pembuka Poker Tongkrongan: kartu 3♠ menunjukkan siapa yang mulai ---------- */
+.opening-reveal {
+  position: absolute;
+  left: 50%;
+  top: 16%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: 18px;
+  background: rgba(255, 253, 249, 0.96);
+  border: 1px solid var(--hair);
+  box-shadow: 0 12px 34px rgba(70, 50, 30, 0.18);
+  pointer-events: none;
+  animation: openingIn 0.45s var(--ease-soft, ease) backwards;
+  /* max-content + max-width: teks dapat lebar penuh (tidak dipecah per kata),
+     tapi tetap dibatasi 92% layar di HP. */
+  width: max-content;
+  max-width: min(92%, 420px);
+}
+.opening-card { --card-w: 62px; flex: 0 0 auto; animation: openingCard 0.6s var(--ease-soft, ease) backwards; }
+.opening-card .pcard { box-shadow: 0 0 0 2px var(--terra-line), 0 8px 18px rgba(70, 50, 30, 0.22); }
+.opening-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.opening-text b { font-family: var(--font-display); font-size: 0.98rem; color: var(--ink); }
+.opening-text span { font-size: 0.82rem; color: var(--ink-2); line-height: 1.35; }
+.opening-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: var(--cream-2);
+  color: var(--ink-2);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.opening-close:hover { background: var(--terra-soft); color: var(--terra-text); }
+@keyframes openingIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+  to { opacity: 1; transform: translateX(-50%); }
+}
+@keyframes openingCard {
+  from { opacity: 0; transform: perspective(600px) rotateY(100deg) scale(0.85); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---------- Pembuka Poker Tongkrongan: animasi pengumuman buang 3 ---------- */
+html[data-motion='off'] .opening-reveal, html[data-motion='reduced'] .opening-reveal { animation: none; }
+@media (max-width: 560px) {
+  .opening-reveal { top: 10%; padding: 10px 12px; gap: 10px; }
+  .opening-card { --card-w: 52px; }
+  .opening-text b { font-size: 0.9rem; }
+  .opening-text span { font-size: 0.76rem; }
+}

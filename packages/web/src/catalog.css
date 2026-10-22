@@ -1,0 +1,840 @@
+/* ==========================================================================
+   catalog.css — halaman "Pilih Game" (tema soft light). Kelas diawali .cat-.
+   ========================================================================== */
+
+.cat {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: calc(18px + var(--safe-top)) 24px calc(36px + var(--safe-bottom));
+  color: var(--ink);
+  animation: fxPageIn 0.38s var(--ease-soft, ease) backwards;
+}
+
+/* ---------- Header ---------- */
+.cat-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.cat-back {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid var(--hair);
+  background: var(--paper);
+  color: var(--ink-2);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.cat-back:hover {
+  color: var(--ink);
+  border-color: var(--terra-line);
+  transform: translateX(-2px);
+}
+
+.cat-head h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 2.6vw, 1.9rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.cat-head p {
+  margin: 2px 0 0;
+  font-size: 0.88rem;
+  color: var(--ink-3);
+}
+
+/* ---------- Toolbar ---------- */
+.cat-toolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+  position: relative;
+  z-index: 20;
+}
+
+.cat-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1px solid var(--hair-2);
+  background: #fff;
+  color: var(--ink-3);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  flex: 1;
+  min-width: 0;
+}
+
+.cat-search:focus-within {
+  border-color: #D9967A;
+  box-shadow: 0 0 0 4px rgba(194, 105, 74, 0.12);
+}
+
+.cat-search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.cat-search input::placeholder {
+  color: var(--ink-3);
+}
+
+.cat-search input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.cat-search button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--cream-2);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+/* Custom Player Filter Dropdown (Pengganti select default) */
+.cat-filter-dd {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.cat-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  height: 48px;
+  padding: 0 16px;
+  border-radius: 14px;
+  border: 1px solid var(--hair-2);
+  background: #ffffff;
+  color: var(--ink-2);
+  font-family: var(--font);
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease;
+  user-select: none;
+}
+
+.cat-filter-btn:hover {
+  border-color: #CDBBB0;
+  background: #FAF8F5;
+  color: var(--ink);
+}
+
+.cat-filter-dd.is-open .cat-filter-btn,
+.cat-filter-btn:focus-visible {
+  border-color: #D9967A;
+  box-shadow: 0 0 0 4px rgba(194, 105, 74, 0.12);
+  outline: none;
+}
+
+.cat-filter-dd.is-active .cat-filter-btn {
+  background: #FDF9F6;
+  border-color: #DDA890;
+  color: #9A4325;
+}
+
+.cat-filter-icon {
+  display: flex;
+  align-items: center;
+  color: var(--ink-3);
+  transition: color 0.15s ease;
+}
+
+.cat-filter-dd.is-active .cat-filter-icon {
+  color: #C2694A;
+}
+
+.cat-filter-label {
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+
+.cat-filter-clear {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(194, 105, 74, 0.12);
+  color: #C2694A;
+  margin-left: 2px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.12s ease;
+}
+
+.cat-filter-clear:hover {
+  background: rgba(194, 105, 74, 0.22);
+  transform: scale(1.1);
+}
+
+.cat-filter-chev {
+  display: flex;
+  align-items: center;
+  color: var(--ink-3);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s ease;
+}
+
+.cat-filter-chev.rot {
+  transform: rotate(180deg);
+  color: #C2694A;
+}
+
+/* Floating Menu Popover */
+.cat-filter-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 250px;
+  background: #ffffff;
+  border: 1px solid var(--hair-2);
+  border-radius: 16px;
+  padding: 6px;
+  box-shadow: 0 16px 36px rgba(45, 35, 25, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04);
+  z-index: 100;
+  animation: catDropIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+@keyframes catDropIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.cat-filter-menu-head {
+  padding: 8px 12px 6px;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  border-bottom: 1px solid var(--hair);
+  margin-bottom: 4px;
+}
+
+.cat-filter-opt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  color: var(--ink);
+  font-family: var(--font);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
+  width: 100%;
+}
+
+.cat-filter-opt:hover {
+  background: var(--cream-2, #F8F5EE);
+  color: var(--ink);
+}
+
+.cat-filter-opt.selected {
+  background: #FDF4EF;
+  color: #B35232;
+}
+
+.cat-filter-opt-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.cat-filter-opt-text b {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.cat-filter-opt-text small {
+  font-size: 0.76rem;
+  color: var(--ink-3);
+}
+
+.cat-filter-opt.selected .cat-filter-opt-text small {
+  color: #C2694A;
+}
+
+.cat-filter-check {
+  display: flex;
+  align-items: center;
+  color: #B35232;
+  flex-shrink: 0;
+}
+
+/* ---------- Tab kategori (segmented) ---------- */
+.cat-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 26px;
+  border-radius: 14px;
+  background: var(--cream-2);
+  border: 1px solid var(--hair);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.cat-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.cat-tabs button {
+  flex: 1 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cat-tabs button:hover {
+  color: var(--ink);
+}
+
+.cat-tabs button span {
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(90, 68, 45, 0.08);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.cat-tabs button.on {
+  background: var(--paper);
+  color: var(--terra-text);
+  box-shadow: var(--shadow-sm);
+}
+
+.cat-tabs button.on span {
+  background: var(--terra-soft);
+  color: var(--terra-text);
+}
+
+.cat-tabs button:focus-visible,
+.cat-back:focus-visible,
+.cat-fav:focus-visible,
+.cat-soon-fav:focus-visible {
+  outline: 3px solid rgba(194, 105, 74, 0.3);
+  outline-offset: 2px;
+}
+
+/* ---------- Section ---------- */
+.cat-section+.cat-section {
+  margin-top: 34px;
+}
+
+.cat-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.cat-section-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.cat-section-head span {
+  font-size: 0.84rem;
+  color: var(--ink-3);
+}
+
+/* ---------- Kartu game tersedia ---------- */
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+.cat-card {
+  --tone-bg: var(--terra-soft);
+  --tone-ink: var(--terra-text);
+  --tone-deep: #E9C9B8;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-radius: 20px;
+  background: var(--paper);
+  border: 1px solid var(--hair);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  animation: fxRise 0.42s var(--ease-soft, ease) backwards;
+  animation-delay: calc(var(--i, 0) * 60ms);
+  transition: transform 0.22s var(--ease-soft, ease), box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.cat-card.tone-sage {
+  --tone-bg: var(--sage-soft);
+  --tone-ink: var(--sage-text);
+  --tone-deep: #C9DFCF;
+}
+
+.cat-card.tone-sky {
+  --tone-bg: var(--sky-soft);
+  --tone-ink: var(--sky-text);
+  --tone-deep: #C8D8E6;
+}
+
+.cat-card.tone-butter {
+  --tone-bg: var(--butter);
+  --tone-ink: var(--butter-text);
+  --tone-deep: #EBD39F;
+}
+
+.cat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--hair-2);
+}
+
+.cat-cover {
+  position: relative;
+  height: 112px;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.7) 0, transparent 55%),
+    linear-gradient(160deg, var(--tone-bg) 0%, var(--tone-deep) 100%);
+  overflow: hidden;
+}
+
+.cat-cover-suits {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-items: center;
+  justify-items: center;
+  font-size: 3.4rem;
+  color: var(--tone-ink);
+  opacity: 0.08;
+  transform: rotate(-12deg) scale(1.3);
+}
+
+.cat-cover-suits i {
+  font-style: normal;
+}
+
+.cat-cover-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  font-size: 2rem;
+  color: var(--tone-ink);
+  background: rgba(255, 253, 249, 0.85);
+  box-shadow: 0 6px 16px rgba(70, 50, 30, 0.12);
+  transition: transform 0.35s var(--ease-soft, ease);
+}
+
+.cat-card:hover .cat-cover-icon {
+  transform: translateY(-3px) rotate(-4deg);
+}
+
+.cat-fav {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 0;
+  background: rgba(255, 253, 249, 0.85);
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+}
+
+.cat-fav:hover {
+  color: #C79235;
+  transform: scale(1.06);
+}
+
+.cat-fav.on {
+  color: #C79235;
+}
+
+.cat-fav.on svg,
+.cat-soon-fav.on svg {
+  fill: #E2BE7A;
+}
+
+.cat-level {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 9px;
+  background: rgba(255, 253, 249, 0.85);
+  color: var(--ink-2);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.cat-level.lv-1 svg {
+  color: var(--sage);
+}
+
+.cat-level.lv-2 svg {
+  color: #D9A84E;
+}
+
+.cat-level.lv-3 svg {
+  color: var(--terra);
+}
+
+.cat-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  padding: 16px 18px 4px;
+}
+
+.cat-kicker {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tone-ink);
+}
+
+.cat-body h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.18rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.cat-body p {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.6em;
+}
+
+.cat-meta {
+  list-style: none;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.cat-meta li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 8px;
+  background: var(--paper-2);
+  border: 1px solid var(--hair);
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.cat-meta li svg {
+  color: var(--ink-3);
+}
+
+.cat-actions {
+  display: flex;
+  gap: 8px;
+  padding: 14px 18px 18px;
+}
+
+.cat-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+}
+
+.cat-actions .btn-gold {
+  flex: 1;
+}
+
+.cat-rules {
+  padding: 0 14px;
+  color: var(--ink-2);
+  border: 1px solid var(--hair-2) !important;
+}
+
+/* ---------- Segera hadir (daftar ringkas, dikelompokkan per kategori) ---------- */
+.cat-soon-group+.cat-soon-group {
+  margin-top: 18px;
+}
+
+.cat-soon-group h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.cat-soon-group h3::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--hair);
+}
+
+.cat-soon-group h3 span {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--cream-2);
+  letter-spacing: 0;
+  font-size: 0.7rem;
+}
+
+.cat-soon {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.cat-soon-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 10px 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 253, 249, 0.6);
+  border: 1px dashed var(--hair-2);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.cat-soon-item:hover {
+  background: var(--paper);
+  border-style: solid;
+  border-color: var(--hair);
+}
+
+.cat-soon-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--cream-2);
+  font-size: 1.15rem;
+  filter: grayscale(0.4);
+  opacity: 0.85;
+}
+
+.cat-soon-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.cat-soon-text b {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cat-soon-text small {
+  font-size: 0.75rem;
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cat-soon-fav {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+
+.cat-soon-fav:hover {
+  background: var(--cream-2);
+  color: #C79235;
+}
+
+.cat-soon-fav.on {
+  color: #C79235;
+}
+
+/* ---------- Kosong ---------- */
+.cat-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 48px 20px;
+  border-radius: 20px;
+  border: 1px dashed var(--hair-2);
+  background: rgba(255, 253, 249, 0.6);
+  color: var(--ink-3);
+  text-align: center;
+}
+
+.cat-empty b {
+  color: var(--ink);
+  font-size: 1rem;
+  margin-top: 4px;
+}
+
+.cat-empty p {
+  margin: 0 0 10px;
+  font-size: 0.88rem;
+  max-width: 360px;
+}
+
+/* ---------- Responsif ---------- */
+@media (max-width: 720px) {
+  .cat {
+    padding: calc(12px + var(--safe-top)) 14px calc(28px + var(--safe-bottom));
+  }
+
+  .cat-toolbar {
+    flex-direction: column;
+  }
+
+  .cat-search,
+  .cat-filter-dd {
+    width: 100%;
+    flex: 0 0 auto;
+  }
+
+  .cat-filter-btn {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .cat-filter-menu {
+    width: 100%;
+  }
+
+  .cat-head p {
+    font-size: 0.8rem;
+  }
+
+  /* Tab dibungkus (bukan digeser mendatar) agar semua kategori terlihat di HP. */
+  .cat-tabs {
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    overflow-x: visible;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .cat-tabs button {
+    flex: 1 1 auto;
+  }
+
+  .cat-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .cat-cover {
+    height: 92px;
+  }
+
+  .cat-section-head span {
+    display: none;
+  }
+}
+
+html[data-motion='off'] .cat-card,
+html[data-motion='reduced'] .cat-card {
+  transition: none;
+}
