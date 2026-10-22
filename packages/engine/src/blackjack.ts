@@ -152,6 +152,7 @@ const OPTIONS: OptionSpec[] = [
     label: 'Batas Waktu Giliran',
     type: 'select',
     choices: [
+      { value: 0, label: '♾️ Tanpa Batas Waktu (Santai)' },
       { value: 10, label: '10 Detik (Kilat)' },
       { value: 15, label: '15 Detik (Standar)' },
       { value: 25, label: '25 Detik (Santai)' },
@@ -300,7 +301,7 @@ export const blackjack: GameModule<BlackjackState, BlackjackAction, BlackjackVie
       dealerHitsSoft17: Boolean(Number(r.dealerHitsSoft17)) || r.dealerHitsSoft17 === true,
       blackjackPayout: r.blackjackPayout === '6:5' ? '6:5' : '3:2',
       allowDoubleAnyTwo: r.allowDoubleAnyTwo !== undefined ? Boolean(r.allowDoubleAnyTwo) : true,
-      turnSeconds: typeof r.turnSeconds === 'number' ? clampInt(r.turnSeconds, 5, 60, 15) : 15,
+      turnSeconds: Number(r.turnSeconds) === 0 ? 0 : (typeof r.turnSeconds === 'number' ? clampInt(r.turnSeconds, 5, 60, 15) : 15),
       passAndPlay: Boolean(r.passAndPlay),
     };
   },

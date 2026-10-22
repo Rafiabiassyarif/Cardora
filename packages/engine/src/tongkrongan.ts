@@ -209,6 +209,7 @@ const OPTIONS: OptionSpec[] = [
     label: 'Batas Waktu Giliran',
     type: 'select',
     choices: [
+      { value: 0, label: '♾️ Tanpa Batas Waktu (Santai)' },
       { value: 10, label: '10 Detik (Kilat)' },
       { value: 15, label: '15 Detik (Standar Tongkrongan)' },
       { value: 20, label: '20 Detik (Santai)' },
@@ -578,7 +579,7 @@ export const tongkrongan: GameModule<TongkronganState, TongkronganAction, Tongkr
       : null;
     return {
       passAndPlay: Boolean(r.passAndPlay),
-      turnSeconds: clampInt(r.turnSeconds, 10, 30, DEFAULTS.turnSeconds),
+      turnSeconds: Number(r.turnSeconds) === 0 ? 0 : clampInt(r.turnSeconds, 10, 60, DEFAULTS.turnSeconds),
       round,
       previousWinner: prevWinner,
       openingRule: r.openingRule === 'spade3_only' ? 'spade3_only' : 'discard_all',
@@ -616,7 +617,7 @@ export const tongkrongan: GameModule<TongkronganState, TongkronganAction, Tongkr
       const pendingDiscard3 = [0, 1, 2, 3].filter(seat => hands[seat].some(c => rankOf(c) === 3));
       const phase = pendingDiscard3.length > 0 ? 'discard3' : 'play';
       const turn = pendingDiscard3.length > 0 ? pendingDiscard3[0] : 0;
-      const turnDeadline = Date.now() + options.turnSeconds * 1000;
+      const turnDeadline = options.turnSeconds > 0 ? Date.now() + options.turnSeconds * 1000 : null;
 
       const log: LogEntry[] = [
         { seat: null, text: '🃏 Ronde 1: 52 kartu dibagikan habis (13 kartu per pemain).' },
@@ -653,7 +654,7 @@ export const tongkrongan: GameModule<TongkronganState, TongkronganAction, Tongkr
     // Ronde 2, 3, dst.: Tidak ada pengeluaran kartu angka 3 lagi!
     // Pemimpin ronde adalah pemenang ronde sebelumnya (Juara 1).
     const starterSeat = previousWinner !== null && previousWinner >= 0 && previousWinner < 4 ? previousWinner : 0;
-    const turnDeadline = Date.now() + options.turnSeconds * 1000;
+    const turnDeadline = options.turnSeconds > 0 ? Date.now() + options.turnSeconds * 1000 : null;
 
     const log: LogEntry[] = [
       { seat: null, text: `🃏 Ronde ${round}: 52 kartu dibagikan habis (13 kartu per pemain).` },
@@ -755,7 +756,7 @@ export const tongkrongan: GameModule<TongkronganState, TongkronganAction, Tongkr
 
       s.phase = 'play';
       s.turn = starterSeat;
-      s.turnDeadline = Date.now() + s.options.turnSeconds * 1000;
+      s.turnDeadline = s.options.turnSeconds > 0 ? Date.now() + s.options.turnSeconds * 1000 : null;
       s.opening = { seat: starterSeat, card: OPENING_CARD, discards: clone(s.discards3) };
 
       pushLog(s.log, { 
@@ -793,13 +794,13 @@ export const tongkrongan: GameModule<TongkronganState, TongkronganAction, Tongkr
         s.lastPlaySeat = null;
         s.consecutiveSkips = 0;
         s.turn = leaderSeat;
-        s.turnDeadline = Date.now() + s.options.turnSeconds * 1000;
+        s.turnDeadline = s.options.turnSeconds > 0 ? Date.now() + s.options.turnSeconds * 1000 : null;
         return s;
       }
 
       // Giliran lanjut ke pemain aktif berikutnya
       s.turn = nextActiveSeat(s, seat);
-      s.turnDeadline = Date.now() + s.options.turnSeconds * 1000;
+      s.turnDeadline = s.options.turnSeconds > 0 ? Date.now() + s.options.turnSeconds * 1000 : null;
       return s;
     }
 
@@ -928,7 +929,7 @@ export const tongkrongan: GameModule<TongkronganState, TongkronganAction, Tongkr
 
       // Lanjut giliran ke pemain aktif berikutnya
       s.turn = nextActiveSeat(s, seat);
-      s.turnDeadline = Date.now() + s.options.turnSeconds * 1000;
+      s.turnDeadline = s.options.turnSeconds > 0 ? Date.now() + s.options.turnSeconds * 1000 : null;
       return s;
     }
 

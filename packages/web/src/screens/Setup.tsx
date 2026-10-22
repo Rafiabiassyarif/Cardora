@@ -375,21 +375,21 @@ export default function Setup({ nav, gameId }: { nav: Nav; gameId: string }) {
                     className={`setup-preset-pill ${options.turnSeconds === 15 && options.openingRule === 'discard_all' && options.allowBombReset ? 'is-active' : ''}`}
                     onClick={() => applyTongkronganPreset('standard')}
                   >
-                    🍻 Standar Tongkrongan (15s · Buang 3 · Bom Aktif)
+                    🍻 Standar Tongkrongan (15s · Buang 3 · Bom)
+                  </button>
+                  <button
+                    type="button"
+                    className={`setup-preset-pill ${options.turnSeconds === 0 ? 'is-active' : ''}`}
+                    onClick={() => setOptions(o => ({ ...o, turnSeconds: 0, showHints: true }))}
+                  >
+                    ♾️ Tanpa Batas Waktu (Santai)
                   </button>
                   <button
                     type="button"
                     className={`setup-preset-pill ${options.turnSeconds === 10 ? 'is-active' : ''}`}
                     onClick={() => applyTongkronganPreset('speed')}
                   >
-                    ⚡ Kilat Turnamen (10s · Denda Hangus x2)
-                  </button>
-                  <button
-                    type="button"
-                    className={`setup-preset-pill ${options.turnSeconds === 20 ? 'is-active' : ''}`}
-                    onClick={() => applyTongkronganPreset('casual')}
-                  >
-                    ☕ Santai (20s · Bantuan Hint)
+                    ⚡ Kilat Turnamen (10s)
                   </button>
                 </>
               )}
@@ -398,17 +398,24 @@ export default function Setup({ nav, gameId }: { nav: Nav; gameId: string }) {
                 <>
                   <button
                     type="button"
-                    className={`setup-preset-pill ${Number(options.startingChips) === 500 ? 'is-active' : ''}`}
+                    className={`setup-preset-pill ${Number(options.startingChips) === 500 && options.turnSeconds !== 0 ? 'is-active' : ''}`}
                     onClick={() => applyBlackjackPreset('casual')}
                   >
                     ☕ Kasual (500 Chip / Min 10)
                   </button>
                   <button
                     type="button"
+                    className={`setup-preset-pill ${options.turnSeconds === 0 ? 'is-active' : ''}`}
+                    onClick={() => setOptions(o => ({ ...o, turnSeconds: 0 }))}
+                  >
+                    ♾️ Tanpa Batas Waktu
+                  </button>
+                  <button
+                    type="button"
                     className={`setup-preset-pill ${Number(options.startingChips) === 5000 ? 'is-active' : ''}`}
                     onClick={() => applyBlackjackPreset('vip')}
                   >
-                    💎 Vegas VIP (5.000 Chip / Min 50)
+                    💎 Vegas VIP (5.000 Chip)
                   </button>
                 </>
               )}
@@ -417,10 +424,17 @@ export default function Setup({ nav, gameId }: { nav: Nav; gameId: string }) {
                 <>
                   <button
                     type="button"
-                    className={`setup-preset-pill ${options.handSize === 7 ? 'is-active' : ''}`}
+                    className={`setup-preset-pill ${options.handSize === 7 && options.turnSeconds !== 0 ? 'is-active' : ''}`}
                     onClick={() => applyCangkulanPreset('standard')}
                   >
-                    🌾 Standar 7 Kartu (Tradisional)
+                    🌾 Standar 7 Kartu
+                  </button>
+                  <button
+                    type="button"
+                    className={`setup-preset-pill ${options.turnSeconds === 0 ? 'is-active' : ''}`}
+                    onClick={() => setOptions(o => ({ ...o, turnSeconds: 0 }))}
+                  >
+                    ♾️ Tanpa Batas Waktu
                   </button>
                   <button
                     type="button"
@@ -436,17 +450,24 @@ export default function Setup({ nav, gameId }: { nav: Nav; gameId: string }) {
                 <>
                   <button
                     type="button"
+                    className={`setup-preset-pill ${options.turnSeconds === 0 ? 'is-active' : ''}`}
+                    onClick={() => setOptions(o => ({ ...o, turnSeconds: 0, showHints: true }))}
+                  >
+                    ♾️ Tanpa Batas Waktu (Santai)
+                  </button>
+                  <button
+                    type="button"
                     className={`setup-preset-pill ${options.turnSeconds === 25 ? 'is-active' : ''}`}
                     onClick={() => applyGenericPreset('casual')}
                   >
-                    ☕ Santai (Timer 25s · Bantuan Hint)
+                    ☕ Santai (Timer 25s)
                   </button>
                   <button
                     type="button"
                     className={`setup-preset-pill ${options.turnSeconds === 10 ? 'is-active' : ''}`}
                     onClick={() => applyGenericPreset('speed')}
                   >
-                    ⚡ Kilat Kompetitif (Timer 10s)
+                    ⚡ Kilat Kompetitif (10s)
                   </button>
                 </>
               )}
@@ -468,7 +489,7 @@ export default function Setup({ nav, gameId }: { nav: Nav; gameId: string }) {
             Siap bermain: <b>{entry.name}</b> · {label(players)} · {targetRounds === 0 ? 'Tanpa Batas' : `${targetRounds} Ronde`}
           </div>
           <div className="setup-summary-meta">
-            Bot {difficulty === 'easy' ? 'Mudah' : difficulty === 'normal' ? 'Normal' : 'Sulit'}
+            Bot {difficulty === 'easy' ? 'Mudah' : difficulty === 'normal' ? 'Normal' : 'Sulit'} · {options.turnSeconds === 0 ? 'Tanpa Batas Waktu ♾️' : `Timer ${options.turnSeconds ?? 15}s`}
           </div>
         </div>
 

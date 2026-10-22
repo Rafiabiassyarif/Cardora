@@ -107,6 +107,7 @@ const OPTIONS: OptionSpec[] = [
     label: 'Batas Waktu Giliran',
     type: 'select',
     choices: [
+      { value: 0, label: '♾️ Tanpa Batas Waktu (Santai)' },
       { value: 10, label: '10 Detik (Kilat)' },
       { value: 15, label: '15 Detik (Standar)' },
       { value: 25, label: '25 Detik (Santai)' },
@@ -239,7 +240,7 @@ export const cangkulan: GameModule<CangkulanState, CangkulanAction, CangkulanVie
       handSize: clampInt(r.handSize, 5, 7, 7),
       aceHigh: r.aceHigh === undefined ? true : Boolean(Number(r.aceHigh) || r.aceHigh),
       openWithDeck: r.openWithDeck === undefined ? true : !!r.openWithDeck,
-      turnSeconds: typeof r.turnSeconds === 'number' ? clampInt(r.turnSeconds, 5, 60, 15) : 15,
+      turnSeconds: Number(r.turnSeconds) === 0 ? 0 : (typeof r.turnSeconds === 'number' ? clampInt(r.turnSeconds, 5, 60, 15) : 15),
       passAndPlay: Boolean(r.passAndPlay),
       autoDrawAll: Boolean(r.autoDrawAll),
       scoringPenalty: r.scoringPenalty === 'card_value' ? 'card_value' : 'card_count',

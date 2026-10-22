@@ -167,6 +167,7 @@ const OPTIONS: OptionSpec[] = [
     label: 'Batas Waktu Giliran',
     type: 'select',
     choices: [
+      { value: 0, label: '♾️ Tanpa Batas Waktu (Santai)' },
       { value: 15, label: '15 Detik (Cepat)' },
       { value: 25, label: '25 Detik (Standar Kasino)' },
       { value: 40, label: '40 Detik (Berpikir Dalam)' },
@@ -413,7 +414,7 @@ export const holdem: GameModule<HoldemState, HoldemAction, HoldemView, HoldemOpt
       smallBlind: bb / 2,
       maxHands: clampInt(r.maxHands, 0, 500, 0),
       blindStructure: r.blindStructure === 'turbo' || r.blindStructure === 'hyper' ? r.blindStructure : 'static',
-      turnSeconds: typeof r.turnSeconds === 'number' ? clampInt(r.turnSeconds, 10, 60, 25) : 25,
+      turnSeconds: Number(r.turnSeconds) === 0 ? 0 : (typeof r.turnSeconds === 'number' ? clampInt(r.turnSeconds, 10, 60, 25) : 25),
       showHandStrength: r.showHandStrength !== undefined ? Boolean(r.showHandStrength) : true,
       autoMuck: r.autoMuck !== undefined ? Boolean(r.autoMuck) : true,
       passAndPlay: Boolean(r.passAndPlay),

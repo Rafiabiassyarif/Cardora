@@ -84,6 +84,7 @@ function getOptionsForGameType(gameId: string, gameType: 'trick' | 'draw' | 'mat
       label: 'Batas Waktu Giliran',
       type: 'select',
       choices: [
+        { value: 0, label: '♾️ Tanpa Batas Waktu (Santai)' },
         { value: 10, label: '10 Detik (Kilat)' },
         { value: 15, label: '15 Detik (Standar)' },
         { value: 25, label: '25 Detik (Santai)' },
@@ -224,7 +225,7 @@ function createCardGame(
       const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
       return {
         passAndPlay: Boolean(r.passAndPlay),
-        turnSeconds: typeof r.turnSeconds === 'number' ? r.turnSeconds : 15,
+        turnSeconds: Number(r.turnSeconds) === 0 ? 0 : (typeof r.turnSeconds === 'number' ? r.turnSeconds : 15),
         targetScore: typeof r.targetScore === 'number' ? r.targetScore : 100,
       };
     },
@@ -269,7 +270,7 @@ function createCardGame(
         maxRounds,
         log: [{ seat: null, text: `Permainan ${gameId} dimulai! Masing-masing pemain mendapat ${initialCardsPerPlayer} kartu.` }],
         over: false,
-        turnDeadline: Date.now() + (options.turnSeconds ?? 15) * 1000,
+        turnDeadline: (options.turnSeconds ?? 15) > 0 ? Date.now() + (options.turnSeconds ?? 15) * 1000 : null,
         options,
       };
     },
@@ -295,14 +296,14 @@ function createCardGame(
           pushLog(s.log, { seat, text: `Deck kartu habis!` });
         }
         s.turn = (seat + 1) % s.names.length;
-        s.turnDeadline = Date.now() + (s.options.turnSeconds ?? 15) * 1000;
+        s.turnDeadline = (s.options.turnSeconds ?? 15) > 0 ? Date.now() + (s.options.turnSeconds ?? 15) * 1000 : null;
         return s;
       }
 
       if (action.type === 'pass') {
         pushLog(s.log, { seat, text: `${pName} melewati giliran (Pass).` });
         s.turn = (seat + 1) % s.names.length;
-        s.turnDeadline = Date.now() + (s.options.turnSeconds ?? 15) * 1000;
+        s.turnDeadline = (s.options.turnSeconds ?? 15) > 0 ? Date.now() + (s.options.turnSeconds ?? 15) * 1000 : null;
         return s;
       }
 
@@ -346,7 +347,7 @@ function createCardGame(
         }
 
         s.turn = (seat + 1) % s.names.length;
-        s.turnDeadline = Date.now() + (s.options.turnSeconds ?? 15) * 1000;
+        s.turnDeadline = (s.options.turnSeconds ?? 15) > 0 ? Date.now() + (s.options.turnSeconds ?? 15) * 1000 : null;
         return s;
       }
 
