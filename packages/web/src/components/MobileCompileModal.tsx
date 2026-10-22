@@ -231,7 +231,7 @@ export function MobileCompileModal({ onClose }: MobileCompileModalProps) {
               }}>
                 <div>
                   <div style={{ fontSize: '0.7rem', color: 'var(--muted, #7E7265)', fontWeight: 600 }}>UKURAN</div>
-                  <div style={{ fontSize: '0.92rem', color: 'var(--ink, #2C241B)', fontWeight: 800, marginTop: 1 }}>390 KB</div>
+                  <div style={{ fontSize: '0.92rem', color: 'var(--ink, #2C241B)', fontWeight: 800, marginTop: 1 }}>4.2 MB</div>
                 </div>
                 <div style={{ borderLeft: '1px solid rgba(70, 50, 30, 0.1)', borderRight: '1px solid rgba(70, 50, 30, 0.1)' }}>
                   <div style={{ fontSize: '0.7rem', color: 'var(--muted, #7E7265)', fontWeight: 600 }}>ANDROID</div>
