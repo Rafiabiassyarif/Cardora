@@ -72,10 +72,15 @@ export default function Landing({ nav, next }: { nav: Nav; next?: Route }) {
               </div>
               <div className="or-sep"><span>atau</span></div>
               <button className="lbtn lbtn-gold lbtn-lg lbtn-block" onClick={guest}>
-                <IconPlay size={18} /> Main sebagai Tamu
+                <IconPlay size={20} /> Main sebagai Tamu
               </button>
-              <button className="lbtn lbtn-ghost lbtn-block" onClick={openCompile} title="Download APK Android & pasang di iPhone">
-                📱 Pasang aplikasi di HP (APK / iPhone)
+              <button className="lbtn hero-app-btn lbtn-block" onClick={openCompile} title="Download APK Android & pasang di iPhone">
+                <span className="hero-app-btn-icon">📲</span>
+                <div className="hero-app-btn-text">
+                  <b>Pasang Aplikasi di HP</b>
+                  <small>Download APK Android & iPhone</small>
+                </div>
+                <span className="hero-app-badge">GRATIS</span>
               </button>
               <p className="hero-note">Tamu: progres tersimpan di perangkat ini. Tautkan akun kapan saja agar aman.</p>
             </div>
