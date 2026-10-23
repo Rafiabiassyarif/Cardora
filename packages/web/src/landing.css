@@ -1119,6 +1119,26 @@
     padding: 20px 18px;
   }
 
+  /* Link APK di hero memakai white-space: nowrap, sehingga kolom hero melebar
+     sampai 375px dan isinya terpotong di layar 360-390px. Paksa kolom mengikuti
+     lebar layar dan biarkan teks panjang (URL) turun baris. */
+  .landing-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hero-copy,
+  .hero-auth {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .hero-copy b,
+  .hero-auth b {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
   .auth-card {
     padding: 24px 20px;
     border-radius: 24px;
