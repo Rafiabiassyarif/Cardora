@@ -44,9 +44,11 @@ export function GoogleButton({
     const el = slot.current;
     if (!google?.accounts?.id || !el) return;
 
-    // Hitung lebar agar tombol pas dengan wadah kartu (rentang 220-400px yang didukung Google)
-    const parentWidth = el.parentElement?.clientWidth || el.clientWidth;
-    const targetWidth = Math.min(400, Math.max(240, parentWidth ? parentWidth - 4 : 360));
+    // Hitung lebar agar tombol pas dengan wadah kartu (rentang 200-400px yang didukung Google).
+    // Catatan: saat effect pertama jalan wadah bisa belum terukur (0), jadi pakai 320 sebagai
+    // default supaya tidak melebihi layar HP (dulu 360 -> tombol meluber keluar kartu).
+    const parentWidth = el.parentElement?.clientWidth || el.clientWidth || 0;
+    const targetWidth = Math.min(400, Math.max(200, parentWidth ? parentWidth - 4 : 320));
 
     const textOption: 'signin_with' | 'signup_with' | 'continue_with' =
       mode === 'signup' ? 'signup_with' : mode === 'signin' ? 'signin_with' : 'continue_with';
@@ -119,6 +121,22 @@ export function GoogleButton({
       renderGsi();
     }
   }, [mode]);
+
+  // Layar berubah (HP diputar / resize / devtools): render ulang agar lebar tombol
+  // mengikuti wadah dan tidak keluar dari kartu.
+  useEffect(() => {
+    if (state !== 'ready') return;
+    let t: number | undefined;
+    const onResize = () => {
+      window.clearTimeout(t);
+      t = window.setTimeout(() => renderGsi(), 180);
+    };
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      window.clearTimeout(t);
+    };
+  }, [state]);
 
   const fallback = state === 'disabled' || state === 'loading';
 
