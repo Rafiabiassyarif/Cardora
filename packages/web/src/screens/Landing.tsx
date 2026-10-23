@@ -51,12 +51,7 @@ export default function Landing({ nav, next }: { nav: Nav; next?: Route }) {
       <main className="landing-main">
         <section className="landing-hero">
           <div className="hero-copy">
-            <div className="hero-kicker-wrap">
-              <span className="hero-kicker">
-                <span className="kicker-dot" /> Gratis · Chip virtual · Tanpa uang asli
-              </span>
-              <span className="hero-tag-free">100% BEBAS TARUHAN</span>
-            </div>
+            <span className="hero-kicker">Gratis · Chip virtual · Tanpa uang asli</span>
             <h1>
               Pilih Kartumu.<br />
               <span className="hero-accent">Ajak Tim.</span> Mulai Main!
@@ -92,14 +87,6 @@ export default function Landing({ nav, next }: { nav: Nav; next?: Route }) {
           </div>
 
           <div className="hero-art" aria-hidden="true" data-tilt>
-            <div className="hero-badge-float top-left">
-              <span className="hbf-icon">👑</span>
-              <div className="hbf-text">
-                <b>VIP Lounge</b>
-                <small>Fair play & real-time</small>
-              </div>
-            </div>
-
             <div className="hero-table">
               {HERO_CARDS.map((c, i) => (
                 <div key={i} className={`hero-card${c.red ? ' red' : ''}`}
@@ -110,17 +97,7 @@ export default function Landing({ nav, next }: { nav: Nav; next?: Route }) {
                 </div>
               ))}
               <div className="hero-chips">
-                <i className="chip-c red">500</i>
-                <i className="chip-c blue">100</i>
-                <i className="chip-c gold">1K</i>
-              </div>
-            </div>
-
-            <div className="hero-badge-float bottom-right">
-              <span className="hbf-icon">🛡️</span>
-              <div className="hbf-text">
-                <b>100% Hiburan</b>
-                <small>Tanpa deposit uang asli</small>
+                <i className="chip-c red" /><i className="chip-c blue" /><i className="chip-c gold" />
               </div>
             </div>
           </div>
