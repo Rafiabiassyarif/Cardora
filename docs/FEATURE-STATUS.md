@@ -12,7 +12,9 @@ Legenda: [x] selesai & diuji · [~] ada, terbatas · [ ] belum
 - [x] Bot 3 tingkat (mudah/normal/sulit) untuk semua game + interaksi banter chat lokal
 - [x] RNG kriptografis (crypto.getRandomValues) untuk kocok kartu
 - [x] Rebuy & Top-up chip instan langsung di meja saat saldo chip habis
-- [ ] 22 game lain — tampil "Segera hadir", tidak bisa dimulai (dikunci di UI dan server)
+- [x] Capsa Banting: memakai mesin Poker Tongkrongan
+- [~] 22 game lain (Omaha, Short Deck, Five Card Draw, Seven Card Stud, Baccarat, Casino War, 41, Samhong, Remi, Capsa Susun, Tepok Nyamuk, Go Fish, Old Maid, Crazy Eights, Mau-Mau, Gin Rummy, Rummy, Hearts, Spades, Euchre, Durak, President) — bisa dimainkan (UI, server, bot) dengan aturan umum yang disederhanakan di `allGames.ts`; aturan khas tiap game & opsi seperti modal chip/big blind belum berpengaruh
+- [x] Validasi aksi game umum: kartu yang dimainkan wajib ada di tangan & tidak duplikat (mencegah klien curang menambah poin)
 
 ## Multiplayer online & Komunikasi
 - [x] Room dengan kode 6 karakter (tanpa karakter ambigu), salin & bagikan

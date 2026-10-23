@@ -3,12 +3,20 @@
 Platform game kartu multiplayer — web (PWA), Android, dan iOS dari satu kode.
 Main sendiri melawan bot (offline) atau online bersama teman lewat kode room.
 
-Game yang sudah bisa dimainkan:
-- Texas Hold'em (2–9 pemain, no-limit, side pot, showdown)
+Semua 27 game di katalog bisa dimainkan.
+
+Dengan aturan lengkap sesuai game aslinya:
+- Texas Hold'em (2–9 pemain, no-limit, side pot, showdown, equity HUD)
 - Cangkulan (2–6 pemain, permainan kartu Indonesia)
 - Blackjack (1–4 pemain vs bandar)
+- Poker Tongkrongan (4 pemain, shedding 13 kartu, Pass & Play / vs bot)
+- Capsa Banting (memakai mesin Poker Tongkrongan)
 
-23 game lain tampil di katalog sebagai "Segera hadir" dan tidak bisa dimulai (ditolak juga oleh server).
+Dengan aturan umum yang disederhanakan (`packages/engine/src/allGames.ts`):
+Omaha, Short Deck, Five Card Draw, Seven Card Stud, Baccarat, Casino War, 41, Samhong,
+Remi, Capsa Susun, Tepok Nyamuk, Go Fish, Old Maid, Crazy Eights, Mau-Mau, Gin Rummy,
+Rummy, Hearts, Spades, Euchre, Durak, President. Pemain bergantian main/ambil/lewat,
+skor dari nilai kartu; aturan khas tiap game belum diterapkan.
 
 ## Struktur
 
@@ -40,7 +48,7 @@ Tanpa database semua pemain bermain sebagai tamu.
 
 ## Tes
 
-    npm test               # 86 tes: evaluator poker, fuzz Hold'em (konservasi chip), 3 game, multiplayer socket nyata
+    npm test               # 135 tes: evaluator poker, fuzz Hold'em (konservasi chip), semua game, multiplayer socket nyata
     npm run typecheck
 
 Uji layout lintas perangkat (dev): jalankan `npm run dev`, buka

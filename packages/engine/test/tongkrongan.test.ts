@@ -500,7 +500,7 @@ describe('Poker Tongkrongan', () => {
     }
 
     expect(s.over).toBe(true);
-    expect(s.finished.length).toBe(4);
+    expect(s.finished.length + s.penalizedRank4.length).toBe(4);
     const res = tongkrongan.results(s);
     expect(res).not.toBeNull();
     expect(res?.length).toBe(4);

@@ -308,18 +308,27 @@ function createCardGame(
       }
 
       if (action.type === 'play' || action.type === 'action') {
-        const cards = action.cards && action.cards.length > 0 ? action.cards : [s.hands[seat][0]];
-        if (!cards || cards.length === 0) {
-          throw new RuleError('Pilih kartu yang ingin dimainkan');
+        const hand = s.hands[seat];
+        if (hand.length === 0) {
+          throw new RuleError('Tidak ada kartu di tangan');
+        }
+        const cards = Array.isArray(action.cards) && action.cards.length > 0 ? action.cards : [hand[0]];
+
+        // Validasi: setiap kartu harus benar-benar ada di tangan pemain dan tidak duplikat.
+        // Tanpa ini, klien yang dimodifikasi bisa mengirim kartu apa saja untuk menambah poin.
+        if (new Set(cards).size !== cards.length) {
+          throw new RuleError('Kartu tidak boleh dimainkan dua kali');
+        }
+        for (const c of cards) {
+          if (!hand.includes(c)) {
+            throw new RuleError('Kartu tidak ada di tanganmu');
+          }
         }
 
         // Hapus kartu dari tangan
         for (const c of cards) {
-          const idx = s.hands[seat].indexOf(c);
-          if (idx >= 0) {
-            s.hands[seat].splice(idx, 1);
-            s.discardPile.push(c);
-          }
+          hand.splice(hand.indexOf(c), 1);
+          s.discardPile.push(c);
         }
 
         // Tambah poin / skor
