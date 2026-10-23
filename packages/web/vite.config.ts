@@ -7,6 +7,9 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
+    watch: {
+      ignored: ['**/android/**', '**/ios/**', '**/dist/**'],
+    },
     proxy: {
       '/api': 'http://127.0.0.1:3000',
       '/socket.io': { target: 'http://127.0.0.1:3000', ws: true },

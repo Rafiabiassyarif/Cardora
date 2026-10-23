@@ -19,9 +19,9 @@
     "start": "npm run start -w @kuypoker/server",
     "db:migrate": "npm run db:migrate -w @kuypoker/server",
     "icons": "node packages/web/scripts/make-icons.mjs",
-    "cap:sync": "npm run build -w @kuypoker/web && npx --prefix packages/web cap sync",
-    "cap:android": "npm run build -w @kuypoker/web && npx --prefix packages/web cap add android && npx --prefix packages/web cap open android",
-    "cap:ios": "npm run build -w @kuypoker/web && npx --prefix packages/web cap add ios && npx --prefix packages/web cap open ios",
+    "cap:sync": "npm run build -w @kuypoker/web && npm run cap:sync -w @kuypoker/web",
+    "cap:android": "npm run build -w @kuypoker/web && npm run cap:android -w @kuypoker/web",
+    "cap:ios": "npm run build -w @kuypoker/web && npm run cap:ios -w @kuypoker/web",
     "android:debug": "npm run cap:sync && cd packages/web/android && gradlew assembleDebug"
   },
   "devDependencies": {

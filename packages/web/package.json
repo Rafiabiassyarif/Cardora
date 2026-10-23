@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "cap:sync": "cap sync",
+    "cap:android": "cap add android && cap open android",
+    "cap:ios": "cap add ios && cap open ios"
   },
   "dependencies": {
     "@capacitor/android": "^6.2.0",
