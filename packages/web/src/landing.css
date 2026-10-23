@@ -933,3 +933,66 @@
     display: none;
   }
 }
+/* ---------- Layar kecil (HP): jangan sampai tombol terpotong ----------
+   Desain baru memakai .lbtn { white-space: nowrap } sehingga label panjang
+   memaksa lebar melebihi layar (tombol "Daftar" di nav hilang, hero-auth melebar).
+   Blok ini hanya berlaku <=560px; tampilan desktop tidak berubah. */
+@media (max-width: 560px) {
+  .landing-nav {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    padding: calc(12px + var(--safe-top, 0px)) 14px 10px;
+  }
+
+  .landing-brand {
+    font-size: 1.25rem;
+    gap: 8px;
+  }
+
+  .landing-brand img {
+    width: 28px;
+    height: 28px;
+  }
+
+  .landing-nav-actions {
+    width: 100%;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .landing-nav-actions .lbtn {
+    min-height: 36px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    border-radius: 10px;
+  }
+
+  .landing-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hero-copy,
+  .hero-auth {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(1.85rem, 8.2vw, 2.6rem);
+  }
+
+  .hero-auth {
+    padding: 16px;
+  }
+
+  /* Label tombol boleh turun baris di HP supaya tidak mendorong layout */
+  .hero-auth .lbtn,
+  .hero-auth .btn-google {
+    white-space: normal;
+    font-size: 0.9rem;
+    padding-left: 10px;
+    padding-right: 10px;
+    text-align: center;
+  }
+}
