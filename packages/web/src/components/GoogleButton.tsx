@@ -1,11 +1,13 @@
-// GoogleButton.tsx — tombol "Masuk dengan Google" (Google Identity Services, tombol resmi).
-// Bila server belum punya GOOGLE_CLIENT_ID, tampil tombol nonaktif dengan penjelasan (tidak pura-pura berhasil).
+// GoogleButton.tsx — tombol Google (Google Identity Services, resmi).
+// Menggunakan theme 'outline' (putih, logo Google berwarna) agar selaras dengan desain Cardora lokal dan hosting.
 import { useEffect, useRef, useState } from 'react';
 import { googleClientId, loadGoogleScript, loginWithGoogle } from '../lib/auth';
 import { emitNotice } from '../lib/store';
 import { play } from '../lib/sound';
 
 const isNative = () => !!(window as any).Capacitor?.isNativePlatform?.();
+
+export type GoogleButtonMode = 'signin' | 'signup' | 'continue';
 
 function GoogleG() {
   return (
@@ -18,22 +20,70 @@ function GoogleG() {
   );
 }
 
-export function GoogleButton({ onSuccess, label = 'Masuk dengan Google' }: { onSuccess: () => void; label?: string }) {
+export function GoogleButton({
+  onSuccess,
+  label = 'Masuk dengan Google',
+  mode = 'continue',
+}: {
+  onSuccess: () => void;
+  label?: string;
+  mode?: GoogleButtonMode;
+}) {
   const slot = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'disabled' | 'busy'>('loading');
   const [reason, setReason] = useState('');
   const cb = useRef(onSuccess);
   cb.current = onSuccess;
 
+  const clientIdRef = useRef<string | null>(null);
+  const googleRef = useRef<any>(null);
+
+  // Fungsi untuk me-render tombol resmi Google sesuai mode & lebar wadah
+  const renderGsi = () => {
+    const google = googleRef.current;
+    const el = slot.current;
+    if (!google?.accounts?.id || !el) return;
+
+    // Hitung lebar agar tombol pas dengan wadah kartu (rentang 220-400px yang didukung Google)
+    const parentWidth = el.parentElement?.clientWidth || el.clientWidth;
+    const targetWidth = Math.min(400, Math.max(240, parentWidth ? parentWidth - 4 : 360));
+
+    const textOption: 'signin_with' | 'signup_with' | 'continue_with' =
+      mode === 'signup' ? 'signup_with' : mode === 'signin' ? 'signin_with' : 'continue_with';
+
+    el.innerHTML = '';
+    google.accounts.id.renderButton(el, {
+      theme: 'outline', // Latar putih bersih & border tipis, selaras dengan Cardora lokal & hosting
+      size: 'large',
+      shape: 'pill',
+      text: textOption,
+      locale: 'id',
+      logo_alignment: 'left',
+      width: targetWidth,
+    });
+  };
+
   useEffect(() => {
     let alive = true;
-    if (isNative()) { setState('disabled'); setReason('Login Google tersedia di versi web.'); return; }
+    if (isNative()) {
+      setState('disabled');
+      setReason('Login Google tersedia di versi web.');
+      return;
+    }
+
     googleClientId().then(async id => {
       if (!alive) return;
-      if (!id) { setState('disabled'); setReason('Login Google belum diaktifkan di server (GOOGLE_CLIENT_ID kosong).'); return; }
+      if (!id) {
+        setState('disabled');
+        setReason('Login Google belum diaktifkan di server (GOOGLE_CLIENT_ID kosong).');
+        return;
+      }
+      clientIdRef.current = id;
       try {
         const google = await loadGoogleScript();
-        if (!alive || !slot.current) return;
+        if (!alive) return;
+        googleRef.current = google;
+
         google.accounts.id.initialize({
           client_id: id,
           ux_mode: 'popup',
@@ -50,22 +100,39 @@ export function GoogleButton({ onSuccess, label = 'Masuk dengan Google' }: { onS
             }
           },
         });
-        slot.current.innerHTML = '';
-        google.accounts.id.renderButton(slot.current, {
-          theme: 'filled_blue', size: 'large', shape: 'pill', text: 'continue_with', locale: 'id',
-          width: Math.min(360, Math.max(220, slot.current.clientWidth || 300)),
-        });
+
+        renderGsi();
         setState('ready');
       } catch (e) {
         if (!alive) return;
-        setState('disabled'); setReason((e as Error).message);
+        setState('disabled');
+        setReason((e as Error).message);
       }
     });
+
     return () => { alive = false; };
   }, []);
 
+  // Re-render saat mode (signin / signup / continue) berganti, misalnya toggle tab di Auth
+  useEffect(() => {
+    if (state === 'ready') {
+      renderGsi();
+    }
+  }, [mode]);
+
   const fallback = state === 'disabled' || state === 'loading';
-  // Satu elemen slot yang stabil di semua state: tombol resmi Google dirender ke sini sekali saja.
+
+  const handleFallbackClick = () => {
+    if (state === 'disabled') {
+      emitNotice('info', reason);
+      return;
+    }
+    // Jika Google script sudah ada, coba prompt jika diklik
+    if (googleRef.current?.accounts?.id?.prompt) {
+      googleRef.current.accounts.id.prompt();
+    }
+  };
+
   return (
     <div className={`google-wrap${state === 'busy' ? ' busy' : ''}`}>
       <div ref={slot} className="google-slot" hidden={fallback} />
@@ -73,10 +140,10 @@ export function GoogleButton({ onSuccess, label = 'Masuk dengan Google' }: { onS
         <button
           type="button"
           className="btn btn-google"
-          aria-disabled="true"
+          aria-disabled={state === 'disabled'}
           data-state={state}
-          onClick={() => state === 'disabled' && emitNotice('info', reason)}
-          title={reason || 'Memuat…'}
+          onClick={handleFallbackClick}
+          title={reason || 'Masuk dengan Google'}
         >
           <GoogleG /> {state === 'loading' ? 'Memuat Google…' : label}
           {state === 'disabled' && <span className="btn-google-note">segera</span>}

@@ -96,7 +96,11 @@ export default function Auth({ nav, mode: initialMode, next }: { nav: Nav; mode:
           <div className="auth-bonus">🎁 Progres tamu (chip, level, statistik) ikut tersimpan + bonus <b>25.000 chip</b>!</div>
         )}
 
-        <GoogleButton onSuccess={goNext} label={isRegister ? 'Daftar dengan Google' : 'Masuk dengan Google'} />
+        <GoogleButton
+          onSuccess={goNext}
+          label={isRegister ? 'Daftar dengan Google' : 'Masuk dengan Google'}
+          mode={isRegister ? 'signup' : 'signin'}
+        />
         <div className="or-sep"><span>atau dengan username</span></div>
 
         <form className="auth-form" onSubmit={submit} noValidate>

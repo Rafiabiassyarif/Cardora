@@ -61,7 +61,7 @@ export default function Landing({ nav, next }: { nav: Nav; next?: Route }) {
             </p>
 
             <div className="hero-auth" role="group" aria-label="Pilih cara masuk">
-              <GoogleButton onSuccess={goNext} label="Lanjut dengan Google" />
+              <GoogleButton onSuccess={goNext} label="Lanjut dengan Google" mode="continue" />
               <div className="hero-auth-row">
                 <button className="lbtn lbtn-blue lbtn-lg" onClick={() => nav({ name: 'auth', mode: 'login', next })}>
                   <IconLogIn size={18} /> Masuk

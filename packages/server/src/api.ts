@@ -39,12 +39,20 @@ export interface GoogleIdentity { sub: string; email: string; name: string }
 
 async function verifyGoogleIdToken(credential: string, clientId: string): Promise<GoogleIdentity | null> {
   const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`);
-  if (!res.ok) return null;
+  if (!res.ok) {
+    log.warn('google tokeninfo fetch failed', { status: res.status });
+    return null;
+  }
   const c = await res.json() as Record<string, string>;
   const issOk = c.iss === 'accounts.google.com' || c.iss === 'https://accounts.google.com';
   const notExpired = Number(c.exp) * 1000 > Date.now();
   const verified = c.email_verified === 'true' || (c.email_verified as unknown) === true;
-  if (c.aud !== clientId || !issOk || !notExpired || !verified || !c.sub || !c.email) return null;
+  const targetId = clientId.trim();
+  const audOk = c.aud?.trim() === targetId || c.azp?.trim() === targetId;
+  if (!audOk || !issOk || !notExpired || !verified || !c.sub || !c.email) {
+    log.warn('google token rejected', { audOk, issOk, notExpired, verified, aud: c.aud, azp: c.azp, expected: targetId });
+    return null;
+  }
   return { sub: c.sub, email: c.email, name: c.name || c.given_name || c.email.split('@')[0] };
 }
 

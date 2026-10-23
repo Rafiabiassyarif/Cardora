@@ -254,8 +254,15 @@
 .google-slot {
   display: flex;
   justify-content: center;
+  align-items: center;
   width: 100%;
-  min-height: 46px;
+  min-height: 48px;
+}
+
+.google-slot > div,
+.google-slot iframe {
+  margin: 0 auto !important;
+  max-width: 100% !important;
 }
 
 .google-slot[hidden] {
