@@ -19,3 +19,6 @@ packages/web/android/.gradle/
 packages/web/android/build/
 packages/web/ios/App/Pods/
 packages/web/ios/App/build/
+
+# Data akun server (jangan pernah di-commit / ditimpa deploy)
+packages/server/.data/
