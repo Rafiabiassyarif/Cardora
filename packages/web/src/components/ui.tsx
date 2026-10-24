@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, type ReactNode, type CSSProperties } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { type Card as CardT, cardLabel, catalogById, type OptionSpec, type CatalogEntry, CATEGORY_LABEL } from '@kuypoker/engine';
 import { useNet } from '../lib/net';
 import { useAppNotices } from '../lib/store';
@@ -6,7 +6,6 @@ import {
   IconArrowLeft,
   IconAward,
   IconCheck,
-  IconChevronDown,
   IconClock,
   IconMinus,
   IconPlus,
@@ -202,97 +201,40 @@ export function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boo
   return <button className={`switch${on ? ' on' : ''}`} role="switch" aria-checked={on} aria-label={label} onClick={() => onChange(!on)} />;
 }
 
-export function CustomSelect<T extends string | number>({
+/** Pilihan sebagai tombol (tanpa dropdown): semua opsi langsung terlihat, satu ketuk untuk memilih. */
+export function ChoiceGroup<T extends string | number>({
   value,
   options,
   onChange,
   disabled,
-  placeholder = 'Pilih opsi',
-  style,
   ariaLabel,
 }: {
   value: T;
   options: { value: T; label: string; icon?: ReactNode; hint?: string }[];
   onChange: (val: T) => void;
   disabled?: boolean;
-  placeholder?: string;
-  style?: CSSProperties;
   ariaLabel?: string;
 }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    window.addEventListener('mousedown', onClick);
-    window.addEventListener('keydown', onKey);
-    return () => {
-      window.removeEventListener('mousedown', onClick);
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
-
-  const active = options.find(o => o.value === value);
-
   return (
-    <div ref={ref} className={`soft-select-wrap ${open ? 'is-open' : ''} ${disabled ? 'is-disabled' : ''}`} style={style}>
-      <button
-        type="button"
-        className="soft-select-btn"
-        disabled={disabled}
-        onClick={() => !disabled && setOpen(o => !o)}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-label={ariaLabel}
-      >
-        <span className="soft-select-content">
-          {active?.icon && <span className="soft-select-icon">{active.icon}</span>}
-          <span className="soft-select-label">{active ? active.label : placeholder}</span>
-        </span>
-        <span className={`soft-select-chev ${open ? 'rot' : ''}`}>
-          <IconChevronDown size={14} />
-        </span>
-      </button>
-
-      {open && !disabled && (
-        <div className="soft-select-menu" role="listbox">
-          {options.map(opt => {
-            const isSel = opt.value === value;
-            return (
-              <button
-                key={String(opt.value)}
-                type="button"
-                role="option"
-                aria-selected={isSel}
-                className={`soft-select-opt ${isSel ? 'selected' : ''}`}
-                onClick={() => {
-                  onChange(opt.value);
-                  setOpen(false);
-                }}
-              >
-                <span className="soft-select-opt-body">
-                  {opt.icon && <span className="soft-select-opt-icon">{opt.icon}</span>}
-                  <span className="soft-select-opt-text">
-                    <b>{opt.label}</b>
-                    {opt.hint && <small>{opt.hint}</small>}
-                  </span>
-                </span>
-                {isSel && (
-                  <span className="soft-select-check">
-                    <IconCheck size={16} />
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      )}
+    <div className="choice-group" role="radiogroup" aria-label={ariaLabel}>
+      {options.map(opt => {
+        const on = opt.value === value;
+        return (
+          <button
+            key={String(opt.value)}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            disabled={disabled && !on}
+            className={`choice${on ? ' on' : ''}`}
+            title={opt.hint}
+            onClick={() => !disabled && !on && onChange(opt.value)}
+          >
+            {opt.icon && <span className="choice-icon">{opt.icon}</span>}
+            {opt.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -349,6 +291,20 @@ export function OptionsForm({ specs, values, onChange, disabled }: {
                   {s.help}
                 </div>
               )}
+              {s.type === 'select' && (
+                <div style={{ marginTop: 8 }}>
+                  <ChoiceGroup
+                    disabled={disabled}
+                    value={isNaN(Number(values[s.key])) ? String(values[s.key]) : Number(values[s.key])}
+                    options={s.choices.map(c => ({
+                      value: isNaN(Number(c.value)) ? String(c.value) : Number(c.value),
+                      label: c.label,
+                    }))}
+                    onChange={v => onChange(s.key, v)}
+                    ariaLabel={s.label}
+                  />
+                </div>
+              )}
             </div>
 
             <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
@@ -356,19 +312,7 @@ export function OptionsForm({ specs, values, onChange, disabled }: {
                 <NumberField min={s.min} max={s.max} step={s.step} disabled={disabled} label={s.label}
                   value={Number(values[s.key] ?? s.min)} onCommit={v => onChange(s.key, v)} />
               )}
-              {s.type === 'select' && (
-                <CustomSelect
-                  style={{ minWidth: 155, maxWidth: 220 }}
-                  disabled={disabled}
-                  value={isNaN(Number(values[s.key])) ? String(values[s.key]) : Number(values[s.key])}
-                  options={s.choices.map(c => ({
-                    value: isNaN(Number(c.value)) ? String(c.value) : Number(c.value),
-                    label: c.label,
-                  }))}
-                  onChange={v => onChange(s.key, v)}
-                  ariaLabel={s.label}
-                />
-              )}
+
               {s.type === 'boolean' && (disabled
                 ? <span className="badge">{values[s.key] ? 'Aktif' : 'Nonaktif'}</span>
                 : <Switch on={!!values[s.key]} label={s.label} onChange={v => onChange(s.key, v)} />)}

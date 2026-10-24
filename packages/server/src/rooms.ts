@@ -121,6 +121,17 @@ export class RoomManager {
 
   sessionByPlayer(playerId: string) { return this.byPlayer.get(playerId); }
 
+  /** Status nyata akun: tersambung ke server & sedang di meja yang bermain. */
+  presence(userId: number): 'online' | 'playing' | 'offline' {
+    let st: 'online' | 'playing' | 'offline' = 'offline';
+    for (const s of this.byPlayer.values()) {
+      if (s.userId !== userId || !s.connected) continue;
+      if (s.roomCode && this.rooms.get(s.roomCode)?.status === 'playing') return 'playing';
+      st = 'online';
+    }
+    return st;
+  }
+
   disconnect(playerId: string) {
     const s = this.byPlayer.get(playerId);
     if (!s) return;

@@ -4,7 +4,7 @@ import { CATALOG, catalogById, getGame, type RoomView } from '@kuypoker/engine';
 import type { Nav } from '../App';
 import { connect, emit, useNet, serverUrl, clearClosed, sendRoomChat } from '../lib/net';
 import { getData, setLastRoom } from '../lib/store';
-import { CustomSelect, OptionsForm, RulesModal, TopBar } from '../components/ui';
+import { ChoiceGroup, OptionsForm, RulesModal, TopBar } from '../components/ui';
 import {
   IconCheck,
   IconCopy,
@@ -110,7 +110,8 @@ function JoinOrCreate({ run, busy }: { run: (f: () => Promise<unknown>) => void;
       </div>
       <div className="card-box stack">
         <b>Buat room baru</b>
-        <CustomSelect
+        <span className="small muted">Pilih game:</span>
+        <ChoiceGroup
           value={gameId}
           options={playable.map(g => ({
             value: g.id,
@@ -265,10 +266,9 @@ function Lobby({ room, run, busy }: { room: any; run: (f: () => Promise<unknown>
 
       <div className="card-box stack">
         <div className="row"><b className="grow">Game & pengaturan</b><button className="btn" onClick={() => setRules(true)}>Aturan</button></div>
-        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-          <span className="grow">Game</span>
-          <CustomSelect
-            style={{ minWidth: 200 }}
+        <div className="stack" style={{ gap: 6 }}>
+          <span className="small muted" style={{ fontWeight: 700 }}>Game</span>
+          <ChoiceGroup
             disabled={!isHost || busy}
             value={room.gameId}
             options={CATALOG.filter(g => g.status === 'available').map(g => ({
@@ -276,21 +276,20 @@ function Lobby({ room, run, busy }: { room: any; run: (f: () => Promise<unknown>
               label: g.name,
               icon: g.icon,
             }))}
-            onChange={val => run(() => emit('room:configure', { gameId: String(val) }))}
+            onChange={(val: string) => run(() => emit('room:configure', { gameId: String(val) }))}
             ariaLabel="Pilih game"
           />
         </div>
-        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-          <span className="grow">Jumlah kursi</span>
-          <CustomSelect
-            style={{ minWidth: 160 }}
+        <div className="stack" style={{ gap: 6 }}>
+          <span className="small muted" style={{ fontWeight: 700 }}>Jumlah kursi</span>
+          <ChoiceGroup
             disabled={!isHost || busy}
             value={room.maxPlayers}
             options={Array.from({ length: mod.maxPlayers - Math.max(2, mod.minPlayers) + 1 }, (_, i) => i + Math.max(2, mod.minPlayers)).map(n => ({
               value: n,
               label: `${n} pemain`,
             }))}
-            onChange={val => run(() => emit('room:configure', { maxPlayers: Number(val) }))}
+            onChange={(val: number) => run(() => emit('room:configure', { maxPlayers: Number(val) }))}
             ariaLabel="Jumlah kursi"
           />
         </div>

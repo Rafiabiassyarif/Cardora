@@ -80,7 +80,9 @@ function bearer(req: Request) {
   return h.startsWith('Bearer ') ? h.slice(7) : '';
 }
 
-export function apiRouter(): Router {
+export type Presence = (userId: number) => 'online' | 'playing' | 'offline';
+
+export function apiRouter(presence: Presence = () => 'offline'): Router {
   const r = Router();
 
   r.get('/health', (_req, res) => res.json({ 
@@ -213,6 +215,80 @@ export function apiRouter(): Router {
       await localUserStore.updateUser(id, { displayName: name, avatar: av });
     }
     return res.json({ ok: true });
+  }));
+
+  // ---------------- Teman & peringkat (data nyata dari akun terdaftar) ----------------
+  const pub = (u: { id: number | string; username: string; display_name?: string; displayName?: string; avatar: string }) =>
+    ({ id: Number(u.id), username: u.username, displayName: u.displayName ?? u.display_name ?? u.username, avatar: u.avatar });
+
+  r.get('/users/search', wrap(async (req, res) => {
+    const id = verifyToken(bearer(req));
+    if (!id) return res.status(401).json({ error: 'Masuk dulu untuk mencari teman' });
+    const q = String(req.query.q ?? '').trim().replace(/^@/, '').slice(0, 20);
+    if (q.length < 2) return res.json({ users: [] });
+    if (dbEnabled()) {
+      const rows = (await db()!.query(
+        `SELECT u.id, u.username, u.display_name, u.avatar, (f.friend_id IS NOT NULL) AS is_friend
+           FROM users u LEFT JOIN friendships f ON f.user_id = $1 AND f.friend_id = u.id
+          WHERE u.id <> $1 AND (lower(u.username) LIKE lower($2) || '%' OR lower(u.display_name) LIKE '%' || lower($2) || '%')
+          ORDER BY u.username LIMIT 8`, [id, q])).rows;
+      return res.json({ users: rows.map(u => ({ ...pub(u), isFriend: u.is_friend })) });
+    }
+    const me = await localUserStore.findById(id);
+    const mine = new Set(me?.friends ?? []);
+    const users = await localUserStore.search(q, id);
+    return res.json({ users: users.map(u => ({ ...pub(u), isFriend: mine.has(u.id) })) });
+  }));
+
+  r.get('/friends', wrap(async (req, res) => {
+    const id = verifyToken(bearer(req));
+    if (!id) return res.status(401).json({ error: 'Silakan masuk' });
+    const list = dbEnabled()
+      ? (await db()!.query(
+          `SELECT u.id, u.username, u.display_name, u.avatar,
+                  COALESCE(SUM(s.wins),0)::int AS wins, COALESCE(SUM(s.played),0)::int AS played
+             FROM friendships f JOIN users u ON u.id = f.friend_id
+             LEFT JOIN user_game_stats s ON s.user_id = u.id
+            WHERE f.user_id = $1 GROUP BY u.id ORDER BY u.username`, [id])).rows.map(u => ({ ...pub(u), wins: u.wins, played: u.played }))
+      : (await localUserStore.friendsOf(id)).map(u => ({ ...pub(u), wins: u.wins, played: u.played }));
+    return res.json({ friends: list.map(f => ({ ...f, status: presence(f.id) })) });
+  }));
+
+  r.post('/friends', wrap(async (req, res) => {
+    const id = verifyToken(bearer(req));
+    if (!id) return res.status(401).json({ error: 'Masuk dulu untuk menambah teman' });
+    const friendId = Number(req.body?.userId);
+    if (!Number.isInteger(friendId) || friendId <= 0) return res.status(400).json({ error: 'Pemain tidak valid' });
+    if (friendId === id) return res.status(400).json({ error: 'Tidak bisa menambahkan diri sendiri' });
+    if (dbEnabled()) {
+      const exists = (await db()!.query('SELECT 1 FROM users WHERE id=$1', [friendId])).rowCount;
+      if (!exists) return res.status(404).json({ error: 'Pemain tidak ditemukan' });
+      await db()!.query('INSERT INTO friendships(user_id, friend_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [id, friendId]);
+    } else {
+      if (!(await localUserStore.findById(friendId))) return res.status(404).json({ error: 'Pemain tidak ditemukan' });
+      await localUserStore.addFriend(id, friendId);
+    }
+    return res.status(201).json({ ok: true });
+  }));
+
+  r.delete('/friends/:id', wrap(async (req, res) => {
+    const id = verifyToken(bearer(req));
+    if (!id) return res.status(401).json({ error: 'Silakan masuk' });
+    const friendId = Number(req.params.id);
+    if (dbEnabled()) await db()!.query('DELETE FROM friendships WHERE user_id=$1 AND friend_id=$2', [id, friendId]);
+    else await localUserStore.removeFriend(id, friendId);
+    return res.json({ ok: true });
+  }));
+
+  /** Peringkat dari pertandingan ONLINE yang tercatat di server (bukan data contoh). */
+  r.get('/leaderboard', wrap(async (_req, res) => {
+    const rows = dbEnabled()
+      ? (await db()!.query(
+          `SELECT u.id, u.username, u.display_name, u.avatar, SUM(s.wins)::int AS wins, SUM(s.played)::int AS played
+             FROM user_game_stats s JOIN users u ON u.id = s.user_id
+            GROUP BY u.id HAVING SUM(s.played) > 0 ORDER BY wins DESC, played ASC LIMIT 20`)).rows.map(u => ({ ...pub(u), wins: u.wins, played: u.played }))
+      : (await localUserStore.leaderboard()).map(u => ({ ...pub(u), wins: u.wins, played: u.played }));
+    return res.json({ players: rows.map((p, i) => ({ rank: i + 1, ...p })) });
   }));
 
   return r;

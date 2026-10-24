@@ -14,9 +14,7 @@ import {
   claimAchievement,
   rebuyChips,
   trackAchievement,
-  addFriend,
-  removeFriend,
-  inviteFriend,
+  getData,
   exportProgressBackup,
   importProgressBackup,
   downloadBackupFile,
@@ -25,9 +23,9 @@ import {
   type FeltTheme,
   type CardTheme,
   type Achievement,
-  type Friend
 } from '../lib/store';
 import { play } from '../lib/sound';
+import { useFriends, searchUsers, addFriendById, removeFriendById, fetchLeaderboard, type FriendRow, type SearchRow, type RankRow } from '../lib/friends';
 import { AnimatedNumber } from './effects';
 import { IconChat,
   IconCheck,
@@ -233,87 +231,47 @@ export function QuestsModal({ onClose }: { onClose: () => void }) {
 }
 
 /* ==========================================================================
-   4. High Roller Leaderboard Modal
+   4. Leaderboard Modal — dari pertandingan online yang tercatat di server
    ========================================================================== */
-const DUMMY_LEADERBOARD = [
-  { rank: 1, name: 'Sultan_Kemang', avatar: '🦁', chips: 14850000, vip: 'Diamond', wins: 342 },
-  { rank: 2, name: 'RatuPoker99', avatar: '👑', chips: 9420000, vip: 'Diamond', wins: 284 },
-  { rank: 3, name: 'NagaMerah', avatar: '🐉', chips: 6250000, vip: 'Platinum', wins: 198 },
-  { rank: 4, name: 'HiuMeja_Surabaya', avatar: '🦈', chips: 4120000, vip: 'Platinum', wins: 156 },
-  { rank: 5, name: 'BluffMaster', avatar: '🦊', chips: 3050000, vip: 'Gold', wins: 112 },
-  { rank: 6, name: 'BintangPoker', avatar: '⭐', chips: 2200000, vip: 'Gold', wins: 89 },
-  { rank: 7, name: 'LuckyStrike', avatar: '🎯', chips: 1850000, vip: 'Silver', wins: 76 },
-];
-
 export function LeaderboardModal({ onClose }: { onClose: () => void }) {
-  const profile = useData(d => d.profile);
-  const eco = useData(d => d.economy);
-  const history = useData(d => d.history);
-  const myWins = history.filter(h => h.rank === 1).length;
+  const session = useData(d => d.session);
+  const [rows, setRows] = useState<RankRow[] | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => { fetchLeaderboard().then(setRows).catch(e => setErr((e as Error).message)); }, []);
 
   return (
-    <Modal title="🏆 Papan Peringkat Sultan" onClose={onClose}>
+    <Modal title="🏆 Papan Peringkat" onClose={onClose}>
       <div className="stack">
         <p className="muted small center" style={{ margin: '0 0 10px' }}>
-          Peringkat para penguasa meja poker dan kolektor chip terbesar musim ini.
+          Peringkat pemain terdaftar berdasarkan kemenangan di meja online.
         </p>
-
-        {/* Podium Top 3 */}
-        <div className="podium-row">
-          {/* Rank 2 */}
-          <div className="podium-item second">
-            <span className="podium-crown">🥈</span>
-            <div className="avatar">{DUMMY_LEADERBOARD[1].avatar}</div>
-            <b className="podium-name">{DUMMY_LEADERBOARD[1].name}</b>
-            <span className="podium-chips">🪙 {(DUMMY_LEADERBOARD[1].chips / 1000000).toFixed(1)}M</span>
+        {err && <span className="error-text center">{err}</span>}
+        {!rows && !err && <span className="muted small center">Memuat peringkat…</span>}
+        {rows && rows.length === 0 && (
+          <div className="card-box stack center" style={{ padding: '22px 18px' }}>
+            <span className="muted small">Belum ada pertandingan online yang tercatat.</span>
+            <span className="muted small">Main di room online dengan akun terdaftar untuk masuk peringkat.</span>
           </div>
-
-          {/* Rank 1 */}
-          <div className="podium-item first">
-            <span className="podium-crown">👑 🥇</span>
-            <div className="avatar lg">{DUMMY_LEADERBOARD[0].avatar}</div>
-            <b className="podium-name">{DUMMY_LEADERBOARD[0].name}</b>
-            <span className="podium-chips">🪙 {(DUMMY_LEADERBOARD[0].chips / 1000000).toFixed(1)}M</span>
+        )}
+        {rows && rows.length > 0 && (
+          <div className="stack" style={{ gap: 8, maxHeight: '55vh', overflowY: 'auto' }}>
+            {rows.map(p => {
+              const me = p.username === session.username;
+              return (
+                <div key={p.id} className={`result-row${p.rank === 1 ? ' first' : ''}`}
+                  style={{ padding: '8px 12px', background: me ? 'var(--terra-soft)' : 'var(--paper-2)', borderRadius: 12 }}>
+                  <span className="rank">{p.rank <= 3 ? ['🥇', '🥈', '🥉'][p.rank - 1] : p.rank}</span>
+                  <span className="avatar">{p.avatar}</span>
+                  <div className="grow" style={{ minWidth: 0 }}>
+                    <b>{p.displayName}{me ? ' (kamu)' : ''}</b>
+                    <div className="small muted">@{p.username}</div>
+                  </div>
+                  <span className="small" style={{ fontWeight: 800 }}>{p.wins} menang / {p.played} main</span>
+                </div>
+              );
+            })}
           </div>
-
-          {/* Rank 3 */}
-          <div className="podium-item third">
-            <span className="podium-crown">🥉</span>
-            <div className="avatar">{DUMMY_LEADERBOARD[2].avatar}</div>
-            <b className="podium-name">{DUMMY_LEADERBOARD[2].name}</b>
-            <span className="podium-chips">🪙 {(DUMMY_LEADERBOARD[2].chips / 1000000).toFixed(1)}M</span>
-          </div>
-        </div>
-
-        {/* Rest of the leaderboard */}
-        <div className="stack" style={{ gap: 8, maxHeight: '35vh', overflowY: 'auto' }}>
-          {DUMMY_LEADERBOARD.slice(3).map(p => (
-            <div key={p.rank} className="result-row" style={{ padding: '8px 12px', background: 'var(--paper-2)', borderRadius: 12 }}>
-              <span className="rank">{p.rank}</span>
-              <span className="avatar">{p.avatar}</span>
-              <div className="grow">
-                <b>{p.name}</b>
-                <div className="small muted">{p.wins} kali menang · {p.vip}</div>
-              </div>
-              <span className="font-display" style={{ color: 'var(--gold-light)', fontWeight: 800 }}>
-                🪙 {(p.chips / 1000000).toFixed(2)}M
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {/* Current User Sticky Row */}
-        <div className="result-row first" style={{ padding: '12px 14px', background: 'rgba(229, 178, 66, 0.12)', border: '1px solid var(--gold)', borderRadius: 14 }}>
-          <span className="rank">#8</span>
-          <span className="avatar">{profile.avatar}</span>
-          <div className="grow">
-            <b>{profile.name} (Kamu)</b>
-            <div className="small muted">{myWins} kali menang · Level {eco.level} ({eco.vipTier})</div>
-          </div>
-          <span className="font-display" style={{ color: 'var(--gold-light)', fontWeight: 800, fontSize: '1.1rem' }}>
-            🪙 {eco.chips.toLocaleString('id-ID')}
-          </span>
-        </div>
+        )}
       </div>
     </Modal>
   );
@@ -868,409 +826,173 @@ export function LastHandModal({
 }
 
 /* ==========================================================================
-   11. Friends Modal (Daftar Teman, Status Online, Tambah & Ajak Main)
+   11. Friends Modal — akun terdaftar sungguhan (cari, tambah, hapus, ajak)
    ========================================================================== */
-interface SearchCandidate {
-  code: string;
-  name: string;
-  avatar: string;
-  level: number;
-  vip: string;
-}
-
-const DIRECTORY_PLAYERS: SearchCandidate[] = [
-  { name: 'Rian_ProPoker', code: 'KUY-5519', avatar: '🐱', level: 14, vip: 'Gold' },
-  { name: 'Dewi_Kartu', code: 'KUY-3184', avatar: '🦊', level: 9, vip: 'Silver' },
-  { name: 'KingBluffer', code: 'KUY-9022', avatar: '👑', level: 27, vip: 'Diamond' },
-  { name: 'Budi Santoso', code: 'KUY-8921', avatar: '🐼', level: 12, vip: 'Silver' },
-  { name: 'Sari Dewi', code: 'KUY-4412', avatar: '🐰', level: 18, vip: 'Gold' },
-  { name: 'Joko Poker', code: 'KUY-2190', avatar: '🦁', level: 22, vip: 'Platinum' },
-  { name: 'Hendra_Ace', code: 'KUY-7733', avatar: '🐯', level: 16, vip: 'Gold' },
-];
-
-export function FriendsModal({ 
+export function FriendsModal({
   onClose,
   onCreateRoom,
   activeRoomCode,
   inviteUrl,
-}: { 
+}: {
   onClose: () => void;
   /** Dipanggil bila belum ada room: buat room dulu, lalu bagikan kodenya. */
   onCreateRoom?: () => void;
   activeRoomCode?: string;
   inviteUrl?: string;
 }) {
-  const profile = useData(d => d.profile);
-  const eco = useData(d => d.economy);
-  const friends = useData(d => d.friends);
+  const session = useData(d => d.session);
+  const { friends, needsAccount, error } = useFriends();
   const [tab, setTab] = useState<'list' | 'add'>('list');
-  const [search, setSearch] = useState('');
-  const [copiedId, setCopiedId] = useState(false);
+  const [q, setQ] = useState('');
+  const [results, setResults] = useState<SearchRow[] | null>(null);
+  const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-
-  // Search state for two-step player addition
-  const [searchResult, setSearchResult] = useState<SearchCandidate | null>(null);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [lastSearchedTerm, setLastSearchedTerm] = useState('');
-
   const onlineCount = friends.filter(f => f.status !== 'offline').length;
 
-  const handleCopyId = async () => {
-    try {
-      await navigator.clipboard.writeText(profile.friendCode);
-      setCopiedId(true);
-      setTimeout(() => setCopiedId(false), 2000);
-      play('click');
-    } catch {
-      prompt('Salin ID Teman Anda:', profile.friendCode);
-    }
+  const say = (t: string) => { setNotice(t); setTimeout(() => setNotice(null), 3500); };
+
+  const copyUsername = async () => {
+    if (!session.username) return;
+    try { await navigator.clipboard.writeText(session.username); say('Username disalin.'); play('click'); }
+    catch { prompt('Username kamu:', session.username); }
   };
 
-  const performSearch = (query: string) => {
-    const raw = query.trim();
-    if (!raw) return;
-    const clean = raw.toUpperCase();
-    play('click');
-    setLastSearchedTerm(raw);
-    setHasSearched(true);
-
-    // 1. Check if user searched for themselves
-    if (clean === profile.friendCode || clean === profile.name.toUpperCase()) {
-      setSearchResult({
-        code: profile.friendCode,
-        name: profile.name,
-        avatar: profile.avatar,
-        level: eco.level,
-        vip: eco.vipTier,
-      });
-      return;
-    }
-
-    // 2. Check if already in friends list
-    const existingFriend = friends.find(
-      f => f.code === clean || f.name.toUpperCase() === clean || f.name.toUpperCase().includes(clean)
-    );
-    if (existingFriend) {
-      setSearchResult({
-        code: existingFriend.code,
-        name: existingFriend.name,
-        avatar: existingFriend.avatar,
-        level: existingFriend.level,
-        vip: existingFriend.vipTier,
-      });
-      return;
-    }
-
-    // 3. Check directory of players
-    const dirMatch = DIRECTORY_PLAYERS.find(
-      p => p.code === clean || p.name.toUpperCase() === clean || p.name.toUpperCase().includes(clean)
-    );
-    if (dirMatch) {
-      setSearchResult(dirMatch);
-      return;
-    }
-
-    // 4. Check if valid KUY code format KUY-XXXX
-    if (/^KUY-\d{3,5}$/i.test(raw)) {
-      const num = parseInt(raw.replace(/\D/g, '') || '1234', 10);
-      const avatars = ['🐱', '🦊', '🐼', '🦁', '🐯', '🐺', '🐰', '🦅'];
-      const vips = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'];
-      setSearchResult({
-        code: `KUY-${String(num % 10000).padStart(4, '0')}`,
-        name: `Pemain_${String(num % 10000).padStart(4, '0')}`,
-        avatar: avatars[num % avatars.length],
-        level: (num % 28) + 3,
-        vip: vips[num % vips.length],
-      });
-      return;
-    }
-
-    // 5. Arbitrary player name search (at least 3 characters)
-    if (raw.length >= 3) {
-      const hash = raw.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-      const avatars = ['🐱', '🦊', '🐼', '🦁', '🐯', '🐺', '🐰', '🦅'];
-      const vips = ['Bronze', 'Silver', 'Gold', 'Platinum'];
-      setSearchResult({
-        code: `KUY-${1000 + (hash % 8999)}`,
-        name: raw.slice(0, 20),
-        avatar: avatars[hash % avatars.length],
-        level: (hash % 25) + 3,
-        vip: vips[hash % vips.length],
-      });
-      return;
-    }
-
-    // Too short or no match
-    setSearchResult(null);
-  };
-
-  const handleSearchSubmit = (e?: React.FormEvent) => {
+  const doSearch = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    performSearch(search);
+    if (q.trim().length < 2) return;
+    setBusy(true);
+    try { setResults(await searchUsers(q)); }
+    catch (err) { say((err as Error).message); }
+    finally { setBusy(false); }
   };
 
-  const handleAddFoundPlayer = (player: SearchCandidate) => {
-    const res = addFriend(player.code || player.name);
-    if (res.ok) {
-      setNotice(`✅ Berhasil menambahkan ${player.name} ke daftar teman!`);
-      setTimeout(() => setNotice(null), 3500);
-    } else {
-      setNotice(`⚠️ ${res.message}`);
-      setTimeout(() => setNotice(null), 3500);
-    }
+  const add = async (u: SearchRow) => {
+    try { await addFriendById(u); setResults(r => r?.map(x => (x.id === u.id ? { ...x, isFriend: true } : x)) ?? null); }
+    catch (err) { say((err as Error).message); }
   };
 
-  const handleSelectSuggested = (p: SearchCandidate) => {
-    setSearch(p.name);
-    performSearch(p.code);
+  const remove = async (f: FriendRow) => {
+    try { await removeFriendById(f); } catch (err) { say((err as Error).message); }
   };
 
-  const handleInvite = async (friend: Friend) => {
+  const invite = async (f: FriendRow) => {
     if (activeRoomCode) {
-      const ok = await inviteFriend(friend.id, activeRoomCode, inviteUrl);
-      if (!ok) setNotice(`Kode room: ${activeRoomCode} — kirim kode ini ke ${friend.name}.`);
+      const text = `Ayo main Cardora bareng! Kode room: ${activeRoomCode}${inviteUrl ? `\n${inviteUrl}` : ''}`;
+      try {
+        if (navigator.share) await navigator.share({ title: 'Cardora', text });
+        else { await navigator.clipboard.writeText(text); say(`Undangan disalin — kirim ke ${f.displayName} lewat chat.`); }
+      } catch { say(`Kode room: ${activeRoomCode} — kirim kode ini ke ${f.displayName}.`); }
       return;
     }
     if (onCreateRoom) { onCreateRoom(); onClose(); return; }
-    setNotice('Buat room dulu dari beranda, lalu ajak teman dengan kode room-nya.');
+    say('Buat room dulu dari beranda, lalu ajak teman dengan kode room-nya.');
   };
 
-  // Status flags for current search result
-  const isSelf = searchResult 
-    ? (searchResult.code === profile.friendCode || searchResult.name.toUpperCase() === profile.name.toUpperCase()) 
-    : false;
-  const isAlreadyFriend = searchResult 
-    ? friends.some(f => f.code === searchResult.code || f.name.toUpperCase() === searchResult.name.toUpperCase()) 
-    : false;
+  const statusText = { online: 'Online', playing: 'Sedang bermain', offline: 'Offline' } as const;
+
+  if (needsAccount) {
+    return (
+      <Modal title="Teman" onClose={onClose}>
+        <div className="card-box stack center" style={{ padding: '26px 20px' }}>
+          <span className="dash-list-icon tone-butter" style={{ margin: '0 auto', width: 44, height: 44 }}><IconUsers size={22} /></span>
+          <p className="muted small center" style={{ margin: '8px 0 0', lineHeight: 1.5 }}>
+            Fitur teman butuh akun terdaftar, supaya temanmu bisa menemukanmu lewat username.<br />
+            Masuk atau daftar dari halaman Profil.
+          </p>
+        </div>
+      </Modal>
+    );
+  }
 
   return (
-    <Modal title={`Teman & Relasi (${onlineCount} Online)`} onClose={onClose}>
+    <Modal title={`Teman (${onlineCount} online)`} onClose={onClose}>
       <div className="stack" style={{ maxHeight: '72vh', overflowY: 'auto', paddingRight: 4, gap: 14 }}>
-        {/* User's Own Player ID Card */}
         <div className="friends-id-card">
           <div className="friends-id-body">
-            <span className="avatar sm">{profile.avatar}</span>
+            <span className="avatar sm">{getData().profile.avatar}</span>
             <div>
-              <div className="friends-id-kicker">ID Pemain Kamu</div>
-              <div className="friends-id-code">{profile.friendCode}</div>
+              <div className="friends-id-kicker">Username kamu</div>
+              <div className="friends-id-code">@{session.username}</div>
             </div>
           </div>
-          <button className="btn btn-sm btn-gold" onClick={handleCopyId}>
-            {copiedId ? <><IconCheck size={14} /> Tersalin!</> : <><IconCopy size={14} /> Salin ID</>}
-          </button>
+          <button className="btn btn-sm btn-gold" onClick={copyUsername}><IconCopy size={14} /> Salin</button>
         </div>
 
-        {/* Tab Selection (Segmented Control) */}
         <div className="segmented-tabs" role="tablist">
-          <button 
-            role="tab"
-            aria-selected={tab === 'list'}
-            className={`segmented-tab ${tab === 'list' ? 'is-active' : ''}`}
-            onClick={() => setTab('list')}
-          >
+          <button role="tab" aria-selected={tab === 'list'} className={`segmented-tab ${tab === 'list' ? 'is-active' : ''}`} onClick={() => setTab('list')}>
             <IconUsers size={16} /> Daftar Teman ({friends.length})
           </button>
-          <button 
-            role="tab"
-            aria-selected={tab === 'add'}
-            className={`segmented-tab ${tab === 'add' ? 'is-active' : ''}`}
-            onClick={() => setTab('add')}
-          >
+          <button role="tab" aria-selected={tab === 'add'} className={`segmented-tab ${tab === 'add' ? 'is-active' : ''}`} onClick={() => setTab('add')}>
             <IconUserPlus size={16} /> Tambah Teman
           </button>
         </div>
 
-        {notice && (
-          <div className="small center" style={{ color: 'var(--terra-text)', fontWeight: 700, padding: '2px 0' }}>
-            {notice}
-          </div>
+        {(notice || error) && (
+          <div className="small center" style={{ color: 'var(--terra-text)', fontWeight: 700 }}>{notice || error}</div>
         )}
 
         {tab === 'list' ? (
           <div className="stack" style={{ gap: 10 }}>
             {friends.length === 0 ? (
               <div className="card-box stack center" style={{ padding: '28px 20px', borderRadius: 18 }}>
-                <span className="dash-list-icon tone-butter" style={{ margin: '0 auto', width: 44, height: 44 }}>
-                  <IconUsers size={22} />
-                </span>
-                <p className="muted small center" style={{ margin: '8px 0 14px', lineHeight: 1.5 }}>
-                  Belum ada teman di daftar Anda.<br />
-                  Bagikan ID temanmu atau tambahkan pemain lain untuk bermain bersama!
+                <p className="muted small center" style={{ margin: '0 0 12px', lineHeight: 1.5 }}>
+                  Belum ada teman. Cari temanmu dengan username mereka.
                 </p>
-                <button className="btn btn-gold btn-sm" onClick={() => setTab('add')}>
-                  <IconUserPlus size={15} /> Tambah Teman Baru
-                </button>
+                <button className="btn btn-gold btn-sm" onClick={() => setTab('add')}><IconUserPlus size={15} /> Tambah Teman</button>
               </div>
-            ) : (
-              friends.map(f => (
-                <div key={f.id} className="friend-card">
-                  <div className="friend-info">
-                    <div className="friend-avatar-wrap">
-                      <span className="avatar">{f.avatar}</span>
-                      <span className={`friend-status-dot ${f.status}`} />
-                    </div>
-                    <div className="friend-details">
-                      <div className="friend-header-row">
-                        <span className="friend-name">{f.name}</span>
-                        <span className="friend-level-badge">Lv.{f.level}</span>
-                      </div>
-                      <div className="friend-meta-row">
-                        <span>{f.code}</span>
-                        <span>·</span>
-                        <span className={`status-badge ${f.status}`}>
-                          {f.status === 'online' && 'Online'}
-                          {f.status === 'playing' && 'Sedang bermain'}
-                          {f.status === 'offline' && 'Offline'}
-                        </span>
-                      </div>
-                    </div>
+            ) : friends.map(f => (
+              <div key={f.id} className="friend-card">
+                <div className="friend-info">
+                  <div className="friend-avatar-wrap">
+                    <span className="avatar">{f.avatar}</span>
+                    <span className={`friend-status-dot ${f.status}`} />
                   </div>
-
-                  <div className="friend-actions">
-                    <button 
-                      className="btn btn-sm btn-gold" 
-                      onClick={() => handleInvite(f)}
-                      title={activeRoomCode ? `Salin undangan room ${activeRoomCode}` : 'Buat room lalu bagikan kodenya'}
-                    >
-                      {activeRoomCode ? 'Salin Undangan' : 'Buat Room & Ajak'}
-                    </button>
-                    <button 
-                      className="friend-remove-btn" 
-                      onClick={() => removeFriend(f.id)} 
-                      title="Hapus pertemanan"
-                      aria-label={`Hapus ${f.name} dari teman`}
-                    >
-                      <IconX size={15} />
-                    </button>
+                  <div className="friend-details">
+                    <div className="friend-header-row"><span className="friend-name">{f.displayName}</span></div>
+                    <div className="friend-meta-row">
+                      <span>@{f.username}</span><span>·</span>
+                      <span className={`status-badge ${f.status}`}>{statusText[f.status]}</span>
+                      {f.played > 0 && <><span>·</span><span>{f.wins}/{f.played} menang</span></>}
+                    </div>
                   </div>
                 </div>
-              ))
-            )}
+                <div className="friend-actions">
+                  <button className="btn btn-sm btn-gold" onClick={() => invite(f)}>{activeRoomCode ? 'Salin Undangan' : 'Ajak Main'}</button>
+                  <button className="friend-remove-btn" onClick={() => remove(f)} aria-label={`Hapus ${f.displayName} dari teman`}><IconX size={15} /></button>
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="stack" style={{ gap: 12 }}>
-            <form className="card-box stack" onSubmit={handleSearchSubmit} style={{ borderRadius: 18, padding: 16 }}>
-              <b>Cari & Tambah Teman</b>
-              <span className="small muted">
-                Masukkan ID Teman (contoh: <code>KUY-8921</code>) atau nama pemain, lalu cari sebelum menambahkan.
-              </span>
+            <form className="card-box stack" onSubmit={doSearch} style={{ borderRadius: 18, padding: 16 }}>
+              <b>Cari pemain</b>
+              <span className="small muted">Ketik username atau nama temanmu (minimal 2 huruf).</span>
               <div className="row" style={{ gap: 8, marginTop: 4 }}>
-                <input 
-                  className="input grow" 
-                  placeholder="Contoh: KUY-4412 atau Budi" 
-                  value={search} 
-                  maxLength={24}
-                  onChange={e => setSearch(e.target.value)} 
-                />
-                <button className="btn btn-gold" type="submit" disabled={!search.trim()}>
-                  <IconSearch size={16} /> Cari
-                </button>
+                <input className="input grow" placeholder="Username teman" value={q} maxLength={20}
+                  onChange={e => setQ(e.target.value)} aria-label="Cari username" autoComplete="off" />
+                <button className="btn btn-gold" type="submit" disabled={busy || q.trim().length < 2}><IconSearch size={16} /> Cari</button>
               </div>
             </form>
-
-            {/* Hasil Pencarian */}
-            {hasSearched && (
-              searchResult ? (
-                <div className="friend-search-result">
-                  <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span className="friend-search-badge-found">
-                      <IconSearch size={14} /> Hasil Pencarian
-                    </span>
-                    <button 
-                      type="button" 
-                      className="btn btn-ghost btn-xs"
-                      onClick={() => { setSearchResult(null); setHasSearched(false); }}
-                      style={{ fontSize: 11, padding: '2px 8px' }}
-                    >
-                      Tutup
-                    </button>
-                  </div>
-
-                  <div className="friend-card" style={{ padding: '12px 14px' }}>
-                    <div className="friend-info">
-                      <span className="avatar sm">{searchResult.avatar}</span>
-                      <div className="friend-details">
-                        <div className="friend-header-row">
-                          <span className="friend-name">{searchResult.name}</span>
-                          <span className="friend-level-badge">Lv.{searchResult.level}</span>
-                        </div>
-                        <div className="friend-meta-row">
-                          <span>{searchResult.code}</span>
-                          <span>·</span>
-                          <span className="status-badge online">{searchResult.vip} VIP</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="friend-actions">
-                      {isSelf ? (
-                        <span className="friend-self-badge">Akun Kamu</span>
-                      ) : isAlreadyFriend ? (
-                        <span className="friend-already-badge">
-                          <IconCheck size={14} /> Sudah Teman
-                        </span>
-                      ) : (
-                        <button 
-                          type="button"
-                          className="btn btn-gold btn-sm" 
-                          onClick={() => handleAddFoundPlayer(searchResult)}
-                        >
-                          <IconUserPlus size={15} /> Tambah Pemain
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="card-box stack center" style={{ borderRadius: 16, padding: '18px 20px', textAlign: 'center', background: 'var(--cream-1)' }}>
-                  <span className="muted small">Pemain "<strong>{lastSearchedTerm}</strong>" tidak ditemukan.</span>
-                  <span className="small muted" style={{ fontSize: '0.8rem', marginTop: 2 }}>
-                    Pastikan ID berformat <code>KUY-XXXX</code> atau minimal 3 karakter nama pemain.
-                  </span>
-                </div>
-              )
+            {results && results.length === 0 && (
+              <div className="card-box center"><span className="muted small">Tidak ada pemain dengan nama "<b>{q.trim()}</b>".</span></div>
             )}
-
-            <div className="card-box stack" style={{ borderRadius: 18, padding: 16 }}>
-              <span className="small muted" style={{ fontWeight: 700 }}>Pemain yang Disarankan:</span>
-              <div className="stack" style={{ gap: 8, marginTop: 4 }}>
-                {DIRECTORY_PLAYERS.slice(0, 4).map(rec => {
-                  const already = friends.some(f => f.code === rec.code);
-                  return (
-                    <div key={rec.code} className="friend-card" style={{ padding: '10px 14px' }}>
-                      <div className="friend-info">
-                        <span className="avatar sm">{rec.avatar}</span>
-                        <div className="friend-details">
-                          <div className="friend-header-row">
-                            <span className="friend-name">{rec.name}</span>
-                            <span className="friend-level-badge">Lv.{rec.level}</span>
-                          </div>
-                          <div className="friend-meta-row">
-                            <span>{rec.code}</span>
-                            <span>·</span>
-                            <span className="status-badge online">{rec.vip} VIP</span>
-                          </div>
-                        </div>
-                      </div>
-                      {already ? (
-                        <span className="friend-already-badge" style={{ padding: '4px 10px', fontSize: '0.74rem' }}>
-                          <IconCheck size={12} /> Teman
-                        </span>
-                      ) : (
-                        <button 
-                          type="button"
-                          className="btn btn-sm btn-subtle" 
-                          onClick={() => handleSelectSuggested(rec)}
-                          title={`Cari dan tinjau ${rec.name}`}
-                        >
-                          <IconSearch size={14} /> Cari
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
+            {results?.map(u => (
+              <div key={u.id} className="friend-card">
+                <div className="friend-info">
+                  <span className="avatar sm">{u.avatar}</span>
+                  <div className="friend-details">
+                    <div className="friend-header-row"><span className="friend-name">{u.displayName}</span></div>
+                    <div className="friend-meta-row"><span>@{u.username}</span></div>
+                  </div>
+                </div>
+                <div className="friend-actions">
+                  {u.isFriend
+                    ? <span className="friend-already-badge"><IconCheck size={14} /> Teman</span>
+                    : <button className="btn btn-gold btn-sm" onClick={() => add(u)}><IconUserPlus size={15} /> Tambah</button>}
+                </div>
               </div>
-            </div>
+            ))}
           </div>
         )}
       </div>

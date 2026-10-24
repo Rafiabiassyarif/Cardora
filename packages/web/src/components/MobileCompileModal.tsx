@@ -20,6 +20,12 @@ export function MobileCompileModal({ onClose }: MobileCompileModalProps) {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState<boolean>(false);
+  const [apkSize, setApkSize] = useState<string>('–');
+  useEffect(() => {
+    fetch('/downloads/Cardora.apk', { method: 'HEAD' })
+      .then(r => { const n = Number(r.headers.get('content-length')); if (r.ok && n) setApkSize(`${(n / 1048576).toFixed(1)} MB`); })
+      .catch(() => { /* offline */ });
+  }, []);
 
   useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone) {
@@ -192,24 +198,11 @@ export function MobileCompileModal({ onClose }: MobileCompileModalProps) {
                     <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: 'var(--ink, #2C241B)', letterSpacing: '-0.02em' }}>
                       Cardora Mobile
                     </h3>
-                    <span style={{
-                      background: 'rgba(34, 197, 94, 0.12)',
-                      color: '#15803D',
-                      border: '1px solid rgba(34, 197, 94, 0.3)',
-                      fontSize: '0.7rem',
-                      fontWeight: 800,
-                      padding: '2px 7px',
-                      borderRadius: 20,
-                    }}>
-                      ✓ Terverifikasi
-                    </span>
                   </div>
                   <div style={{ fontSize: '0.82rem', color: 'var(--muted, #7E7265)', marginBottom: 4 }}>
                     Platform Game Kartu &amp; Kasino Multiplayer
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', color: '#B45309', fontWeight: 700 }}>
-                    <span>⭐ 4.9</span>
-                    <span>·</span>
                     <span>100% Gratis</span>
                     <span>·</span>
                     <span>Tanpa Uang Asli</span>
@@ -231,15 +224,15 @@ export function MobileCompileModal({ onClose }: MobileCompileModalProps) {
               }}>
                 <div>
                   <div style={{ fontSize: '0.7rem', color: 'var(--muted, #7E7265)', fontWeight: 600 }}>UKURAN</div>
-                  <div style={{ fontSize: '0.92rem', color: 'var(--ink, #2C241B)', fontWeight: 800, marginTop: 1 }}>4.2 MB</div>
+                  <div style={{ fontSize: '0.92rem', color: 'var(--ink, #2C241B)', fontWeight: 800, marginTop: 1 }}>{apkSize}</div>
                 </div>
                 <div style={{ borderLeft: '1px solid rgba(70, 50, 30, 0.1)', borderRight: '1px solid rgba(70, 50, 30, 0.1)' }}>
                   <div style={{ fontSize: '0.7rem', color: 'var(--muted, #7E7265)', fontWeight: 600 }}>ANDROID</div>
-                  <div style={{ fontSize: '0.92rem', color: 'var(--ink, #2C241B)', fontWeight: 800, marginTop: 1 }}>8.0+</div>
+                  <div style={{ fontSize: '0.92rem', color: 'var(--ink, #2C241B)', fontWeight: 800, marginTop: 1 }}>5.1+</div>
                 </div>
                 <div>
                   <div style={{ fontSize: '0.7rem', color: 'var(--muted, #7E7265)', fontWeight: 600 }}>VERSI</div>
-                  <div style={{ fontSize: '0.92rem', color: '#D97706', fontWeight: 800, marginTop: 1 }}>v1.0.0</div>
+                  <div style={{ fontSize: '0.92rem', color: '#D97706', fontWeight: 800, marginTop: 1 }}>v1.0</div>
                 </div>
               </div>
 

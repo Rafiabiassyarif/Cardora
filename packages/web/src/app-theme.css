@@ -1080,173 +1080,57 @@ input[type=range] {
   box-shadow: inset 0 0 0 1px rgba(60, 45, 30, 0.15);
 }
 
-/* ---------- Custom Soft Select (Dropdown modern & halus) ---------- */
-.soft-select-wrap {
-  position: relative;
-  display: inline-block;
-}
-
-.soft-select-btn {
+/* ---------- Pilihan tombol (pengganti dropdown) ---------- */
+.choice-group,
+.cat-player-chips {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  min-height: 42px;
-  width: 100%;
-  padding: 8px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--hair-2);
-  background: #ffffff;
-  color: var(--ink);
-  font-family: var(--font);
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 1px 3px rgba(90, 68, 45, 0.04);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-  user-select: none;
-}
-
-.soft-select-btn:hover:not(:disabled) {
-  border-color: #D4C3AC;
-  background: #FAF8F5;
-}
-
-.soft-select-wrap.is-open .soft-select-btn,
-.soft-select-btn:focus-visible {
-  border-color: #D9967A;
-  box-shadow: 0 0 0 3px rgba(194, 105, 74, 0.14);
-  outline: none;
-}
-
-.soft-select-wrap.is-disabled .soft-select-btn {
-  opacity: 0.6;
-  cursor: not-allowed;
-  background: var(--cream-2);
-}
-
-.soft-select-content {
-  display: flex;
-  align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.soft-select-icon {
-  font-size: 1.1rem;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-.soft-select-label {
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--ink);
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.soft-select-chev {
-  display: flex;
+.choice {
+  display: inline-flex;
   align-items: center;
-  color: var(--ink-3);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s ease;
-  flex-shrink: 0;
-}
-
-.soft-select-chev.rot {
-  transform: rotate(180deg);
-  color: #C2694A;
-}
-
-.soft-select-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  min-width: 100%;
-  width: max-content;
-  max-width: 280px;
-  background: #ffffff;
+  gap: 6px;
+  min-height: 38px;
+  padding: 7px 14px;
+  border-radius: 999px;
   border: 1px solid var(--hair-2);
-  border-radius: 14px;
-  padding: 5px;
-  box-shadow: 0 12px 28px rgba(70, 50, 30, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04);
-  z-index: 100;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  animation: catDropIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
-  max-height: 240px;
-  overflow-y: auto;
-}
-
-.soft-select-opt {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 8px 10px;
-  border: none;
-  background: transparent;
-  border-radius: 9px;
-  color: var(--ink);
-  font-family: var(--font);
+  background: var(--paper);
+  color: var(--ink-2);
+  font-weight: 700;
+  font-size: 0.86rem;
+  line-height: 1.2;
   text-align: left;
   cursor: pointer;
-  transition: background 0.14s ease;
-  width: 100%;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-.soft-select-opt:hover {
-  background: #FAF8F5;
+.choice:hover:not(:disabled) {
+  color: var(--ink);
+  background: #FFF6EA;
+  border-color: #D4C3AC;
 }
 
-.soft-select-opt.selected {
-  background: #FDF4EF;
-  color: #B35232;
+.choice.on {
+  color: #fff;
+  background: var(--terra, #C2694A);
+  border-color: var(--terra, #C2694A);
 }
 
-.soft-select-opt-body {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
+.choice:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
-.soft-select-opt-icon {
-  font-size: 1.15rem;
+.choice:focus-visible {
+  outline: 2px solid #D9967A;
+  outline-offset: 2px;
+}
+
+.choice-icon {
+  font-size: 1rem;
   line-height: 1;
-  flex-shrink: 0;
-}
-
-.soft-select-opt-text {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.soft-select-opt-text b {
-  font-size: 0.88rem;
-  font-weight: 600;
-}
-
-.soft-select-opt-text small {
-  font-size: 0.74rem;
-  color: var(--ink-3);
-}
-
-.soft-select-opt.selected .soft-select-opt-text small {
-  color: #C2694A;
-}
-
-.soft-select-check {
-  display: flex;
-  align-items: center;
-  color: #B35232;
-  flex-shrink: 0;
 }
 
 /* ---------- Stepper input (untuk angka dengan tombol +/- tactile) ---------- */

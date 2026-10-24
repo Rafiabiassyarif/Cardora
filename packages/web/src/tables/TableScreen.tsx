@@ -5,7 +5,7 @@ import { catalogById, type BaseView, AVATARS } from '@kuypoker/engine';
 import { Modal, RulesModal, Countdown } from '../components/ui';
 import { Confetti } from '../components/effects';
 import { TableEmotes, type TableChatMessage } from '../components/gameModals';
-import { useData, toggleBgm, getData, addFriend, sendPushNotification } from '../lib/store';
+import { useData, toggleBgm, getData, sendPushNotification } from '../lib/store';
 import { useYouTubePlayer, openMusicModal } from '../lib/youtubePlayer';
 import { useNet, sendRoomChat } from '../lib/net';
 import { play, isBgmPlaying } from '../lib/sound';
@@ -345,16 +345,7 @@ export function TableScreen(p: TableProps) {
                   <span className="rank">{r.rank}</span>
                   <span className="avatar">{avatars[r.seat]}</span>
                   <span className="grow">{names[r.seat]}{r.seat === v.you ? ' (kamu)' : ''}</span>
-                  {r.seat !== v.you && (
-                    <button 
-                      className="btn btn-ghost btn-sm" 
-                      style={{ fontSize: '0.72rem', padding: '2px 8px' }}
-                      onClick={() => addFriend(names[r.seat])}
-                      title={`Tambah ${names[r.seat]} sebagai teman`}
-                    >
-                      + Teman
-                    </button>
-                  )}
+
                   {p.gameId === 'tongkrongan' ? (
                     <span className="badge" style={{ fontSize: '0.75rem' }}>
                       {r.rank === 1 ? '🏆 Juara 1 (Habis)' : r.rank === 4 ? `💥 Kalah (${r.score} kartu)` : `Posisi ${r.rank} (${r.score} kartu)`}

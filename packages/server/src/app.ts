@@ -38,12 +38,12 @@ export function createApp(cfg: Config = defaultConfig): AppHandle {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Vary', 'Origin');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-      res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,OPTIONS');
+      res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
     }
     if (req.method === 'OPTIONS') { res.sendStatus(204); return; }
     next();
   });
-  app.use('/api', apiRouter());
+  app.use('/api', apiRouter(uid => rooms.presence(uid)));
 
   // Sajikan build web (opsional) dari server yang sama → satu domain, tanpa CORS.
   const webDist = cfg.webDist ? resolve(cfg.webDist) : '';

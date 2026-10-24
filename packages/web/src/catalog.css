@@ -117,114 +117,6 @@
   cursor: pointer;
 }
 
-/* Custom Player Filter Dropdown (Pengganti select default) */
-.cat-filter-dd {
-  position: relative;
-  flex: 0 0 auto;
-}
-
-.cat-filter-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  height: 48px;
-  padding: 0 16px;
-  border-radius: 14px;
-  border: 1px solid var(--hair-2);
-  background: #ffffff;
-  color: var(--ink-2);
-  font-family: var(--font);
-  font-size: 0.92rem;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease;
-  user-select: none;
-}
-
-.cat-filter-btn:hover {
-  border-color: #CDBBB0;
-  background: #FAF8F5;
-  color: var(--ink);
-}
-
-.cat-filter-dd.is-open .cat-filter-btn,
-.cat-filter-btn:focus-visible {
-  border-color: #D9967A;
-  box-shadow: 0 0 0 4px rgba(194, 105, 74, 0.12);
-  outline: none;
-}
-
-.cat-filter-dd.is-active .cat-filter-btn {
-  background: #FDF9F6;
-  border-color: #DDA890;
-  color: #9A4325;
-}
-
-.cat-filter-icon {
-  display: flex;
-  align-items: center;
-  color: var(--ink-3);
-  transition: color 0.15s ease;
-}
-
-.cat-filter-dd.is-active .cat-filter-icon {
-  color: #C2694A;
-}
-
-.cat-filter-label {
-  white-space: nowrap;
-  letter-spacing: -0.01em;
-}
-
-.cat-filter-clear {
-  display: grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: rgba(194, 105, 74, 0.12);
-  color: #C2694A;
-  margin-left: 2px;
-  cursor: pointer;
-  transition: background 0.15s ease, transform 0.12s ease;
-}
-
-.cat-filter-clear:hover {
-  background: rgba(194, 105, 74, 0.22);
-  transform: scale(1.1);
-}
-
-.cat-filter-chev {
-  display: flex;
-  align-items: center;
-  color: var(--ink-3);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s ease;
-}
-
-.cat-filter-chev.rot {
-  transform: rotate(180deg);
-  color: #C2694A;
-}
-
-/* Floating Menu Popover */
-.cat-filter-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  width: 250px;
-  background: #ffffff;
-  border: 1px solid var(--hair-2);
-  border-radius: 16px;
-  padding: 6px;
-  box-shadow: 0 16px 36px rgba(45, 35, 25, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04);
-  z-index: 100;
-  animation: catDropIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
 @keyframes catDropIn {
   from {
     opacity: 0;
@@ -235,73 +127,6 @@
     opacity: 1;
     transform: translateY(0) scale(1);
   }
-}
-
-.cat-filter-menu-head {
-  padding: 8px 12px 6px;
-  font-family: var(--font-display);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-  border-bottom: 1px solid var(--hair);
-  margin-bottom: 4px;
-}
-
-.cat-filter-opt {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 8px 12px;
-  border: none;
-  background: transparent;
-  border-radius: 10px;
-  color: var(--ink);
-  font-family: var(--font);
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.14s ease, color 0.14s ease;
-  width: 100%;
-}
-
-.cat-filter-opt:hover {
-  background: var(--cream-2, #F8F5EE);
-  color: var(--ink);
-}
-
-.cat-filter-opt.selected {
-  background: #FDF4EF;
-  color: #B35232;
-}
-
-.cat-filter-opt-text {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.cat-filter-opt-text b {
-  font-size: 0.9rem;
-  font-weight: 600;
-  line-height: 1.2;
-}
-
-.cat-filter-opt-text small {
-  font-size: 0.76rem;
-  color: var(--ink-3);
-}
-
-.cat-filter-opt.selected .cat-filter-opt-text small {
-  color: #C2694A;
-}
-
-.cat-filter-check {
-  display: flex;
-  align-items: center;
-  color: #B35232;
-  flex-shrink: 0;
 }
 
 /* ---------- Tab kategori (segmented) ---------- */
@@ -788,19 +613,9 @@
     flex-direction: column;
   }
 
-  .cat-search,
-  .cat-filter-dd {
+  .cat-search {
     width: 100%;
     flex: 0 0 auto;
-  }
-
-  .cat-filter-btn {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .cat-filter-menu {
-    width: 100%;
   }
 
   .cat-head p {
@@ -837,4 +652,7 @@
 html[data-motion='off'] .cat-card,
 html[data-motion='reduced'] .cat-card {
   transition: none;
+}
+.cat-player-chips {
+  margin: -6px 0 16px;
 }

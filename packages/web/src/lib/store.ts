@@ -25,19 +25,6 @@ export interface Settings {
 export interface Profile {
   name: string;
   avatar: string;
-  friendCode: string;
-}
-
-export interface Friend {
-  id: string;
-  code: string;
-  name: string;
-  avatar: string;
-  vipTier: VipTier;
-  level: number;
-  status: 'online' | 'playing' | 'offline';
-  currentRoom?: string | null;
-  lastSeen: number;
 }
 
 export interface LocalResult {
@@ -113,7 +100,6 @@ interface Data {
   history: LocalResult[];
   session: Session;
   economy: Economy;
-  friends: Friend[];
   onboarded: boolean;
 }
 
@@ -366,46 +352,6 @@ function defaultEconomy(): Economy {
   };
 }
 
-export function defaultFriends(): Friend[] {
-  return [
-    {
-      id: 'f-budi',
-      code: 'KUY-8921',
-      name: 'Budi Santoso',
-      avatar: '🦁',
-      vipTier: 'Gold',
-      level: 12,
-      status: 'online',
-      currentRoom: null,
-      lastSeen: Date.now() - 2 * 60 * 1000,
-    },
-    {
-      id: 'f-sari',
-      code: 'KUY-4412',
-      name: 'Sari Dewi',
-      avatar: '🐼',
-      vipTier: 'Silver',
-      level: 8,
-      status: 'online',
-      currentRoom: null,
-      lastSeen: Date.now() - 5 * 60 * 1000,
-    },
-    {
-      id: 'f-joko',
-      code: 'KUY-2190',
-      name: 'Joko Poker',
-      avatar: '🐯',
-      vipTier: 'Platinum',
-      level: 22,
-      status: 'offline',
-      currentRoom: null,
-      lastSeen: Date.now() - 45 * 60 * 1000,
-    },
-  ];
-}
-
-const randomFriendCode = () => `KUY-${Math.floor(1000 + Math.random() * 9000)}`;
-
 const defaults = (): Data => ({
   settings: {
     sound: true,
@@ -421,12 +367,11 @@ const defaults = (): Data => ({
       youtubeTitle: 'Smooth Jazz Lounge',
     },
   },
-  profile: { name: randomName(), avatar: AVATARS[Math.floor(Math.random() * AVATARS.length)], friendCode: randomFriendCode() },
+  profile: { name: randomName(), avatar: AVATARS[Math.floor(Math.random() * AVATARS.length)] },
   favorites: ['holdem'],
   history: [],
   session: { token: null, authToken: null, username: null, guest: false, provider: null, lastRoom: null },
   economy: defaultEconomy(),
-  friends: defaultFriends(),
   onboarded: false,
 });
 
@@ -462,7 +407,6 @@ function load(): Data {
     const prof: Profile = {
       ...base.profile,
       ...(d.profile ?? {}),
-      friendCode: d.profile?.friendCode || base.profile.friendCode,
     };
     return {
       ...base,
@@ -471,10 +415,6 @@ function load(): Data {
       profile: prof,
       session: { ...base.session, ...d.session },
       economy: eco,
-      // Daftar teman tersimpan lokal; status "di meja" lama (kode room fiktif) tidak bisa diverifikasi server → dinormalkan.
-      friends: Array.isArray(d.friends) && d.friends.length
-        ? d.friends.map((f: Friend) => (f.status === 'playing' ? { ...f, status: 'online' as const, currentRoom: null } : f))
-        : defaultFriends(),
     };
   } catch {
     return defaults();
@@ -741,71 +681,6 @@ export function resetLocal() {
   update(() => data);
 }
 
-export function addFriend(query: string): { ok: boolean; message: string; friend?: Friend } {
-  const clean = query.trim().toUpperCase();
-  if (!clean) return { ok: false, message: 'Masukkan ID teman atau nama pemain' };
-  if (clean === data.profile.friendCode || clean === data.profile.name.toUpperCase()) {
-    return { ok: false, message: 'Tidak dapat menambahkan diri sendiri sebagai teman' };
-  }
-  const exists = data.friends.some(f => f.code === clean || f.name.toUpperCase() === clean);
-  if (exists) return { ok: false, message: 'Pemain sudah ada dalam daftar teman Anda' };
-
-  const isCode = /^KUY-\d{4}$/.test(clean);
-  const friendCode = isCode ? clean : `KUY-${Math.floor(1000 + Math.random() * 9000)}`;
-  const friendName = isCode ? `Pemain_${clean.slice(-4)}` : query.trim().slice(0, 20);
-  const friendAvatar = AVATARS[Math.floor(Math.random() * AVATARS.length)];
-  const friendLevel = 3 + Math.floor(Math.random() * 25);
-  const friendVip: VipTier = calculateVipTier(friendLevel);
-
-  const newFriend: Friend = {
-    id: `f-${Date.now()}`,
-    code: friendCode,
-    name: friendName,
-    avatar: friendAvatar,
-    vipTier: friendVip,
-    level: friendLevel,
-    status: 'online',
-    currentRoom: null,
-    lastSeen: Date.now(),
-  };
-
-  update(d => {
-    d.friends = [newFriend, ...d.friends];
-    trackAchievementInternal(d, 'social_chatter', 1);
-  });
-  play('achievement');
-  emitNotice('success', `👥 Berhasil menambahkan ${newFriend.name} sebagai teman!`);
-  return { ok: true, message: 'Berhasil menambahkan teman', friend: newFriend };
-}
-
-export function removeFriend(id: string) {
-  update(d => {
-    d.friends = d.friends.filter(f => f.id !== id);
-  });
-  emitNotice('info', 'Teman dihapus dari daftar.');
-}
-
-/** Undangan nyata: salin/bagikan teks berisi kode room aktif. Tidak ada server pesan antarteman,
- *  jadi aplikasi TIDAK mengklaim undangan "terkirim" — pengguna mengirimnya sendiri lewat chat. */
-export async function inviteFriend(friendId: string, roomCode: string, inviteUrl?: string): Promise<boolean> {
-  const friend = data.friends.find(f => f.id === friendId);
-  if (!friend || !roomCode) return false;
-  const text = `Ayo main Cardora bareng! Kode room: ${roomCode}${inviteUrl ? `\n${inviteUrl}` : ''}`;
-  try {
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      await navigator.share({ title: 'Cardora', text });
-      emitNotice('success', `Undangan room ${roomCode} siap dikirim ke ${friend.name}.`);
-    } else {
-      await navigator.clipboard.writeText(text);
-      emitNotice('success', `Undangan room ${roomCode} disalin — tempel & kirim ke ${friend.name} lewat chat.`);
-    }
-    play('click');
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 export async function requestNotificationPermission(): Promise<boolean> {
   if (typeof window === 'undefined' || !('Notification' in window)) {
     emitNotice('warn', 'Browser ini tidak mendukung Web Notifications.');
@@ -866,7 +741,6 @@ export function exportProgressBackup(): string {
     exportedAt: Date.now(),
     profile: data.profile,
     economy: data.economy,
-    friends: data.friends,
     history: data.history,
     favorites: data.favorites,
     settings: data.settings,
@@ -893,7 +767,6 @@ export function importProgressBackup(backupStr: string): { ok: boolean; message:
     update(d => {
       d.profile = { ...d.profile, ...parsed.profile };
       d.economy = { ...d.economy, ...parsed.economy };
-      if (Array.isArray(parsed.friends)) d.friends = parsed.friends;
       if (Array.isArray(parsed.history)) d.history = parsed.history;
       if (Array.isArray(parsed.favorites)) d.favorites = parsed.favorites;
       if (parsed.settings) d.settings = { ...d.settings, ...parsed.settings };
@@ -913,7 +786,7 @@ export function downloadBackupFile() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `cardora-backup-${data.profile.friendCode}-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `cardora-backup-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
   emitNotice('success', '📥 File cadangan progres berhasil diunduh!');

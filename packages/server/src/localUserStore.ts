@@ -15,7 +15,11 @@ export interface StoredUser {
   createdAt: number;
   stats: Record<string, { played: number; wins: number }>;
   history: Array<{ game_id: string; finished_at: string; players: number; rank: number; score: number }>;
+  /** ID pengguna yang ditambahkan sebagai teman (satu arah). */
+  friends?: number[];
 }
+
+const totals = (u: StoredUser) => Object.values(u.stats).reduce((a, s) => ({ wins: a.wins + s.wins, played: a.played + s.played }), { wins: 0, played: 0 });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -142,5 +146,44 @@ export const localUserStore = {
     });
     if (user.history.length > 30) user.history.pop();
     saveToFile();
+  },
+
+  /** Cari pemain berdasarkan awalan username atau bagian nama tampilan. */
+  async search(q: string, excludeId: number, limit = 8): Promise<StoredUser[]> {
+    ensureLoaded();
+    const n = q.toLowerCase();
+    return [...usersMap.values()]
+      .filter(u => u.id !== excludeId && (u.username.toLowerCase().startsWith(n) || u.displayName.toLowerCase().includes(n)))
+      .sort((a, b) => a.username.localeCompare(b.username))
+      .slice(0, limit);
+  },
+
+  async friendsOf(id: number): Promise<Array<StoredUser & { wins: number; played: number }>> {
+    ensureLoaded();
+    const u = usersMap.get(id);
+    return (u?.friends ?? []).map(fid => usersMap.get(fid)).filter((f): f is StoredUser => !!f).map(f => ({ ...f, ...totals(f) }));
+  },
+
+  async addFriend(id: number, friendId: number): Promise<void> {
+    ensureLoaded();
+    const u = usersMap.get(id);
+    if (!u || !usersMap.has(friendId) || id === friendId) return;
+    u.friends = [...new Set([...(u.friends ?? []), friendId])];
+    saveToFile();
+  },
+
+  async removeFriend(id: number, friendId: number): Promise<void> {
+    ensureLoaded();
+    const u = usersMap.get(id);
+    if (!u?.friends) return;
+    u.friends = u.friends.filter(f => f !== friendId);
+    saveToFile();
+  },
+
+  /** Peringkat dari statistik pertandingan online yang benar-benar tercatat. */
+  async leaderboard(limit = 20): Promise<Array<StoredUser & { wins: number; played: number }>> {
+    ensureLoaded();
+    return [...usersMap.values()].map(u => ({ ...u, ...totals(u) })).filter(u => u.played > 0)
+      .sort((a, b) => b.wins - a.wins || a.played - b.played).slice(0, limit);
   },
 };

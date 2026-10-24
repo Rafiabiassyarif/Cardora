@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { CATALOG, catalogById } from '@kuypoker/engine';
 import type { Nav } from '../App';
 import { useData, statsFor } from '../lib/store';
+import { useFriends } from '../lib/friends';
 import { useYouTubePlayer, openMusicModal } from '../lib/youtubePlayer';
 import { Modal } from '../components/ui';
 import {
@@ -44,7 +45,7 @@ export default function Home({ nav }: { nav: Nav }) {
   const favorites = useData(d => d.favorites);
   const history = useData(d => d.history);
   const eco = useData(d => d.economy);
-  const friends = useData(d => d.friends);
+  const { friends, needsAccount } = useFriends();
   const session = useData(d => d.session);
   const settings = useData(d => d.settings);
   const yt = useYouTubePlayer();
@@ -79,8 +80,8 @@ export default function Home({ nav }: { nav: Nav }) {
     { key: 'wheel', icon: <IconGift />, tone: 'terra', title: 'Roda Harian', sub: spinReady ? 'Siap diputar hari ini' : 'Sudah diputar · tunggu 12 jam', badge: spinReady ? 'Siap' : null, onClick: () => setWheelOpen(true) },
     { key: 'quest', icon: <IconTarget />, tone: 'sage', title: 'Misi Harian', sub: `${eco.quests.filter(q => q.completed).length}/${eco.quests.length} selesai`, badge: pendingQuests ? `${pendingQuests} hadiah` : null, onClick: () => setQuestsOpen(true) },
     { key: 'ach', icon: <IconAward />, tone: 'butter', title: 'Pencapaian', sub: `${eco.achievements.filter(a => a.unlocked).length}/${eco.achievements.length} terbuka`, badge: pendingAchievements ? `${pendingAchievements} baru` : null, onClick: () => setAchievementsOpen(true) },
-    { key: 'rank', icon: <IconTrophy />, tone: 'sky', title: 'Peringkat', sub: 'Lihat posisi teratas', badge: null, onClick: () => setLeaderboardOpen(true) },
-    { key: 'friends', icon: <IconUsers />, tone: 'sage', title: 'Teman', sub: `${onlineFriends} sedang online`, badge: null, onClick: () => setFriendsOpen(true) },
+    { key: 'rank', icon: <IconTrophy />, tone: 'sky', title: 'Peringkat', sub: 'Dari pertandingan online', badge: null, onClick: () => setLeaderboardOpen(true) },
+    { key: 'friends', icon: <IconUsers />, tone: 'sage', title: 'Teman', sub: needsAccount ? 'Butuh akun terdaftar' : friends.length ? `${onlineFriends} dari ${friends.length} online` : 'Cari teman lewat username', badge: null, onClick: () => setFriendsOpen(true) },
   ];
 
   return (

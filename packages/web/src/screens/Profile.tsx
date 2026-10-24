@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AVATARS, catalogById } from '@kuypoker/engine';
 import { useData, update, statsFor } from '../lib/store';
+import { useFriends } from '../lib/friends';
 import { refreshIdentity } from '../lib/net';
 import { api } from '../lib/auth';
 import { TopBar } from '../components/ui';
@@ -20,7 +21,7 @@ export default function Profile({ onBack, onLogout, onLinkAccount }: { onBack: (
   const profile = useData(d => d.profile);
   const history = useData(d => d.history);
   const session = useData(d => d.session);
-  const friends = useData(d => d.friends);
+  const { friends } = useFriends();
   const [name, setName] = useState(profile.name);
   const [achievementsOpen, setAchievementsOpen] = useState(false);
   const [friendsOpen, setFriendsOpen] = useState(false);
@@ -97,7 +98,7 @@ export default function Profile({ onBack, onLogout, onLinkAccount }: { onBack: (
         </div>
 
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--hair)' }}>
-          <span className="small muted">ID Teman: <b style={{ color: 'var(--gold-light)' }}>{profile.friendCode}</b></span>
+          <span className="small muted">{session.username ? <>Username: <b style={{ color: 'var(--gold-light)' }}>@{session.username}</b></> : 'Tamu — daftar agar bisa berteman'}</span>
           <button className="btn btn-sm btn-gold" onClick={() => setFriendsOpen(true)}>
             <IconUsers size={14} /> Daftar Teman ({friends.length})
           </button>
