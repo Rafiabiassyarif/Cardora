@@ -9,7 +9,7 @@ import {
   type TongkronganState 
 } from '../src/tongkrongan';
 import { cryptoRng } from '../src/rng';
-import { rankOf } from '../src/cards';
+import { rankOf, type Card } from '../src/cards';
 import { RuleError } from '../src/types';
 
 describe('Poker Tongkrongan', () => {

@@ -1,5 +1,6 @@
 // App.tsx — routing sederhana berbasis state (hash) + lazy loading halaman.
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { lazyRetry } from './lib/lazyRetry';
 import { useData, effectiveMotion, emitNotice, getData } from './lib/store';
 import { Toasts } from './components/ui';
 import { MusicPlayerModal, GlobalYouTubeHost, FloatingMusicWidget } from './components/MusicPlayerModal';
@@ -17,16 +18,16 @@ export type Route =
   | { name: 'settings' }
   | { name: 'guide' };
 
-const Landing = lazy(() => import('./screens/Landing'));
-const Auth = lazy(() => import('./screens/Auth'));
-const Home = lazy(() => import('./screens/Home'));
-const Catalog = lazy(() => import('./screens/Catalog'));
-const Setup = lazy(() => import('./screens/Setup'));
-const LocalPlay = lazy(() => import('./screens/LocalPlay'));
-const Online = lazy(() => import('./screens/Online'));
-const Profile = lazy(() => import('./screens/Profile'));
-const Settings = lazy(() => import('./screens/Settings'));
-const Guide = lazy(() => import('./screens/Guide'));
+const Landing = lazyRetry(() => import('./screens/Landing'));
+const Auth = lazyRetry(() => import('./screens/Auth'));
+const Home = lazyRetry(() => import('./screens/Home'));
+const Catalog = lazyRetry(() => import('./screens/Catalog'));
+const Setup = lazyRetry(() => import('./screens/Setup'));
+const LocalPlay = lazyRetry(() => import('./screens/LocalPlay'));
+const Online = lazyRetry(() => import('./screens/Online'));
+const Profile = lazyRetry(() => import('./screens/Profile'));
+const Settings = lazyRetry(() => import('./screens/Settings'));
+const Guide = lazyRetry(() => import('./screens/Guide'));
 
 export type Nav = (r: Route) => void;
 

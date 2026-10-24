@@ -1,5 +1,6 @@
 // tables/TableScreen.tsx — kerangka meja: bar atas, felt, hasil, log, aturan, keluar/rematch, chat & BGM.
-import { lazy, Suspense, useState, useEffect, useRef } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
+import { lazyRetry } from '../lib/lazyRetry';
 import { catalogById, type BaseView, AVATARS } from '@kuypoker/engine';
 import { Modal, RulesModal, Countdown } from '../components/ui';
 import { Confetti } from '../components/effects';
@@ -11,11 +12,11 @@ import { play, isBgmPlaying } from '../lib/sound';
 import { IconHelp, IconList, IconMusic, IconX, IconLogOut, IconPlay } from '../components/icons';
 import type { MatchSeries } from '../lib/localGame';
 
-const HoldemTable = lazy(() => import('./HoldemTable').then(m => ({ default: m.HoldemTable })));
-const CangkulanTable = lazy(() => import('./CangkulanTable').then(m => ({ default: m.CangkulanTable })));
-const BlackjackTable = lazy(() => import('./BlackjackTable').then(m => ({ default: m.BlackjackTable })));
-const TongkronganTable = lazy(() => import('./TongkronganTable').then(m => ({ default: m.TongkronganTable })));
-const UniversalTable = lazy(() => import('./UniversalTable').then(m => ({ default: m.UniversalTable })));
+const HoldemTable = lazyRetry(() => import('./HoldemTable').then(m => ({ default: m.HoldemTable })));
+const CangkulanTable = lazyRetry(() => import('./CangkulanTable').then(m => ({ default: m.CangkulanTable })));
+const BlackjackTable = lazyRetry(() => import('./BlackjackTable').then(m => ({ default: m.BlackjackTable })));
+const TongkronganTable = lazyRetry(() => import('./TongkronganTable').then(m => ({ default: m.TongkronganTable })));
+const UniversalTable = lazyRetry(() => import('./UniversalTable').then(m => ({ default: m.UniversalTable })));
 
 export interface TableProps {
   gameId: string;
