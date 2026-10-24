@@ -339,8 +339,8 @@ export default function Setup({ nav, gameId }: { nav: Nav; gameId: string }) {
           </div>
           <div className="card-box" style={{ borderRadius: 18, padding: 18 }}>
             {/* Quick Presets Universal untuk Setiap Game */}
-            <div className="setup-preset-row" style={{ marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
-              <span className="small muted" style={{ fontWeight: 700, alignSelf: 'center' }}>Preset Cepat:</span>
+            <div className="setup-preset-row">
+              <span className="small muted" style={{ fontWeight: 750, alignSelf: 'center', marginRight: 4 }}>Preset Cepat:</span>
               
               {isHoldem && (
                 <>

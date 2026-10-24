@@ -159,15 +159,17 @@ export function TableScreen(p: TableProps) {
     <div className="table-page">
       <div className="table-bar">
         <button className="btn icon-btn" aria-label="Keluar" title="Keluar dari meja" onClick={() => (v?.over ? p.onExit() : setConfirmExit(true))}><IconX size={18} /></button>
-        <div className="title">
-          {entry.icon} {entry.name}
+        <div className="title" title={entry.name}>
+          <span className="title-icon">{entry.icon}</span>{' '}
+          <span className="title-full">{entry.name}</span>
+          <span className="title-short">{entry.name.replace(/^Poker\s+/i, '')}</span>
           {p.subtitle && <span className="muted small"> · {p.subtitle}</span>}
         </div>
 
         {/* Indikator Ronde Aktif & Klasemen */}
         {p.series && (
           <button 
-            className="badge" 
+            className="badge series-badge" 
             onClick={() => setShowSeriesModal(true)} 
             title="Klik untuk melihat papan klasemen ronde"
             style={{ 
@@ -180,8 +182,8 @@ export function TableScreen(p: TableProps) {
               color: 'var(--gold-light)'
             }}
           >
-            🎯 Ronde {p.series.currentRound}{p.series.targetRounds > 0 ? ` / ${p.series.targetRounds}` : ''}
-            <span style={{ fontSize: '0.72rem' }}>📊</span>
+            <span className="series-badge-full">🎯 Ronde {p.series.currentRound}{p.series.targetRounds > 0 ? ` / ${p.series.targetRounds}` : ''} 📊</span>
+            <span className="series-badge-short">🎯 {p.series.currentRound}{p.series.targetRounds > 0 ? `/${p.series.targetRounds}` : ''} 📊</span>
           </button>
         )}
 
@@ -324,13 +326,13 @@ export function TableScreen(p: TableProps) {
                 </div>
               </div>
 
-              <div className="row" style={{ marginTop: 10 }}>
+              <div className="row" style={{ marginTop: 10, flexWrap: 'wrap', gap: 8 }}>
                 {p.onNextRound && (
-                  <button className="btn btn-gold btn-lg grow" onClick={p.onNextRound} style={{ boxShadow: '0 0 20px rgba(229, 178, 66, 0.4)' }}>
+                  <button className="btn btn-gold btn-lg grow" onClick={p.onNextRound} style={{ boxShadow: '0 0 20px rgba(229, 178, 66, 0.4)', minWidth: 140 }}>
                     Lanjut ke Ronde {p.series.currentRound + 1} ➔
                   </button>
                 )}
-                <button className="btn grow" onClick={p.onExit}>Akhiri Seri</button>
+                <button className="btn grow" onClick={p.onExit} style={{ minWidth: 100 }}>Akhiri Seri</button>
               </div>
             </div>
           </Modal>
@@ -357,9 +359,9 @@ export function TableScreen(p: TableProps) {
             <p className="center" style={{ fontSize: '1.2rem', margin: '14px 0' }}>
               {v.results.find((r: any) => r.seat === v.you)?.rank === 1 ? '🏆 Kamu juara!' : 'Coba lagi, pasti bisa!'}
             </p>
-            <div className="row">
-              {p.onRematch && <button className="btn btn-gold grow" onClick={p.onRematch}>{p.rematchLabel ?? 'Main lagi'}</button>}
-              <button className="btn grow" onClick={p.onExit}>Kembali</button>
+            <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+              {p.onRematch && <button className="btn btn-gold grow" onClick={p.onRematch} style={{ minWidth: 130 }}>{p.rematchLabel ?? 'Main lagi'}</button>}
+              <button className="btn grow" onClick={p.onExit} style={{ minWidth: 100 }}>Kembali</button>
             </div>
           </Modal>
         )

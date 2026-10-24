@@ -239,86 +239,169 @@ export function ChoiceGroup<T extends string | number>({
   );
 }
 
-/** Form opsi generik dari OptionSpec modul game dengan desain card-row modern. */
+function getOptionIcon(key: string): string {
+  const k = key.toLowerCase();
+  if (k.includes('pass') || k.includes('device') || k.includes('operan') || k.includes('play')) return '📱';
+  if (k.includes('second') || k.includes('time') || k.includes('timer') || k.includes('turn')) return '⏱️';
+  if (k.includes('opening') || k.includes('round') || k.includes('start')) return '🃏';
+  if (k.includes('bomb') || k.includes('quad')) return '💣';
+  if (k.includes('forbid') || k.includes('penalty') || k.includes('foul') || k.includes('ban') || k.includes('larangan')) return '🚫';
+  if (k.includes('chip') || k.includes('stack') || k.includes('blind') || k.includes('bet')) return '🪙';
+  if (k.includes('hint') || k.includes('assist') || k.includes('guide')) return '💡';
+  if (k.includes('sort') || k.includes('hand') || k.includes('card') || k.includes('deck')) return '🗂️';
+  if (k.includes('odds') || k.includes('rate') || k.includes('payout')) return '📊';
+  return '⚙️';
+}
+
+function renderChoiceContent(label: string) {
+  const m = label.match(/^(.*?)\s*\((.*?)\)$/);
+  if (m) {
+    return (
+      <span className="opt-choice-text-wrap">
+        <span className="opt-choice-main">{m[1]}</span>
+        <span className="opt-choice-sub">{m[2]}</span>
+      </span>
+    );
+  }
+  return (
+    <span className="opt-choice-text-wrap">
+      <span className="opt-choice-main">{label}</span>
+    </span>
+  );
+}
+
+/** Form opsi generik dari OptionSpec modul game dengan desain kartu terstruktur, konsisten & rapi. */
 export function OptionsForm({ specs, values, onChange, disabled }: {
   specs: OptionSpec[]; values: Record<string, unknown>; onChange: (key: string, v: unknown) => void; disabled?: boolean;
 }) {
   return (
-    <div className="options-form-grid" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div className="options-form-grid">
       {specs.map(s => {
-        const isTime = s.key.toLowerCase().includes('second') || s.key.toLowerCase().includes('time');
-        const isChip = s.key.toLowerCase().includes('chip') || s.key.toLowerCase().includes('stack') || s.key.toLowerCase().includes('blind') || s.key.toLowerCase().includes('bet');
-        const isDevice = s.key.toLowerCase().includes('pass') || s.key.toLowerCase().includes('play');
-        const isBomb = s.key.toLowerCase().includes('bomb');
-        const isForbidden = s.key.toLowerCase().includes('forbid') || s.key.toLowerCase().includes('penalty') || s.key.toLowerCase().includes('foul');
-        const isCard = s.key.toLowerCase().includes('card') || s.key.toLowerCase().includes('hand') || s.key.toLowerCase().includes('deck') || s.key.toLowerCase().includes('opening') || s.key.toLowerCase().includes('ace');
-        const isEye = s.key.toLowerCase().includes('hint') || s.key.toLowerCase().includes('odds') || s.key.toLowerCase().includes('muck') || s.key.toLowerCase().includes('roadmap');
+        const icon = getOptionIcon(s.key);
 
-        const icon = isTime ? '⏱️'
-          : isChip ? '🪙'
-          : isDevice ? '📱'
-          : isBomb ? '💣'
-          : isForbidden ? '🚫'
-          : isCard ? '🃏'
-          : isEye ? '👁️'
-          : '⚙️';
-
-        return (
-          <div
-            key={s.key}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 14,
-              padding: '11px 14px',
-              borderRadius: 14,
-              background: 'rgba(255, 255, 255, 0.7)',
-              border: '1px solid rgba(70, 50, 30, 0.08)',
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
-              transition: 'background 0.15s ease, border-color 0.15s ease',
-            }}
-          >
-            <div style={{ flex: 1, minWidth: 0, paddingRight: 4 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: '1rem', lineHeight: 1 }} aria-hidden="true">{icon}</span>
-                <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--ink, #2C241B)' }}>
-                  {s.label}
-                </span>
-              </div>
-              {s.help && (
-                <div style={{ fontSize: '0.76rem', color: 'var(--muted, #7E7265)', marginTop: 2, lineHeight: 1.35, paddingLeft: 24 }}>
-                  {s.help}
+        if (s.type === 'boolean') {
+          const isOn = !!values[s.key];
+          return (
+            <div
+              key={s.key}
+              className={`opt-card opt-card-boolean${isOn ? ' is-checked' : ''}`}
+              role="button"
+              tabIndex={disabled ? -1 : 0}
+              onClick={() => !disabled && onChange(s.key, !isOn)}
+              onKeyDown={e => {
+                if (!disabled && (e.key === 'Enter' || e.key === ' ')) {
+                  e.preventDefault();
+                  onChange(s.key, !isOn);
+                }
+              }}
+            >
+              <div className="opt-header-row">
+                <span className="opt-icon-badge" aria-hidden="true">{icon}</span>
+                <div className="opt-info">
+                  <span className="opt-title">{s.label}</span>
+                  {s.help && <p className="opt-help">{s.help}</p>}
                 </div>
-              )}
-              {s.type === 'select' && (
-                <div style={{ marginTop: 8 }}>
-                  <ChoiceGroup
+                <div className="opt-action" onClick={e => e.stopPropagation()}>
+                  {disabled ? (
+                    <span className="badge">{isOn ? 'Aktif' : 'Nonaktif'}</span>
+                  ) : (
+                    <div className="opt-switch-wrap">
+                      <span className={`opt-switch-status ${isOn ? 'is-on' : ''}`}>
+                        {isOn ? 'Aktif' : 'Mati'}
+                      </span>
+                      <Switch on={isOn} label={s.label} onChange={v => onChange(s.key, v)} />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        if (s.type === 'select') {
+          const activeVal = isNaN(Number(values[s.key])) ? String(values[s.key]) : Number(values[s.key]);
+          const currentChoice = s.choices.find(c => {
+            const optVal = isNaN(Number(c.value)) ? String(c.value) : Number(c.value);
+            return optVal === activeVal;
+          });
+
+          return (
+            <div key={s.key} className="opt-card opt-card-select">
+              <div className="opt-header-row">
+                <span className="opt-icon-badge" aria-hidden="true">{icon}</span>
+                <div className="opt-info">
+                  <div className="opt-title-line">
+                    <span className="opt-title">{s.label}</span>
+                    {currentChoice && (
+                      <span className="opt-current-badge">
+                        {currentChoice.label.split('(')[0].trim()}
+                      </span>
+                    )}
+                  </div>
+                  {s.help && <p className="opt-help">{s.help}</p>}
+                </div>
+              </div>
+
+              <div className="opt-choices-wrap">
+                <div
+                  className={`opt-choices-grid ${
+                    s.choices.length === 2 ? 'is-pair' : s.choices.length <= 4 ? 'is-quartet' : 'is-multi'
+                  }`}
+                  role="radiogroup"
+                  aria-label={s.label}
+                >
+                  {s.choices.map(c => {
+                    const optVal = isNaN(Number(c.value)) ? String(c.value) : Number(c.value);
+                    const on = activeVal === optVal;
+                    return (
+                      <button
+                        key={String(c.value)}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        disabled={disabled && !on}
+                        className={`opt-choice-btn${on ? ' is-active' : ''}`}
+                        onClick={() => !disabled && !on && onChange(s.key, optVal)}
+                      >
+                        <span className={`opt-choice-indicator${on ? ' is-active' : ''}`} aria-hidden="true">
+                          {on ? '✓' : ''}
+                        </span>
+                        {renderChoiceContent(c.label)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        if (s.type === 'number') {
+          return (
+            <div key={s.key} className="opt-card opt-card-number">
+              <div className="opt-header-row">
+                <span className="opt-icon-badge" aria-hidden="true">{icon}</span>
+                <div className="opt-info">
+                  <span className="opt-title">{s.label}</span>
+                  {s.help && <p className="opt-help">{s.help}</p>}
+                </div>
+                <div className="opt-action">
+                  <NumberField
+                    min={s.min}
+                    max={s.max}
+                    step={s.step}
                     disabled={disabled}
-                    value={isNaN(Number(values[s.key])) ? String(values[s.key]) : Number(values[s.key])}
-                    options={s.choices.map(c => ({
-                      value: isNaN(Number(c.value)) ? String(c.value) : Number(c.value),
-                      label: c.label,
-                    }))}
-                    onChange={v => onChange(s.key, v)}
-                    ariaLabel={s.label}
+                    label={s.label}
+                    value={Number(values[s.key] ?? s.min)}
+                    onCommit={v => onChange(s.key, v)}
                   />
                 </div>
-              )}
+              </div>
             </div>
+          );
+        }
 
-            <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
-              {s.type === 'number' && (
-                <NumberField min={s.min} max={s.max} step={s.step} disabled={disabled} label={s.label}
-                  value={Number(values[s.key] ?? s.min)} onCommit={v => onChange(s.key, v)} />
-              )}
-
-              {s.type === 'boolean' && (disabled
-                ? <span className="badge">{values[s.key] ? 'Aktif' : 'Nonaktif'}</span>
-                : <Switch on={!!values[s.key]} label={s.label} onChange={v => onChange(s.key, v)} />)}
-            </div>
-          </div>
-        );
+        return null;
       })}
     </div>
   );

@@ -105,9 +105,30 @@ export function TongkronganTable({
   }, [selectedCards, v.hand]);
 
   // Alasan tombol Mainkan belum bisa ditekan (ditampilkan di dock).
-  const blockReason = !isMyTurn ? null
-    : selectedCards.length > 0 && !selectedCombo ? 'Bukan kombinasi sah'
-    : null;
+  const blockReason = useMemo(() => {
+    if (!isMyTurn) return 'Bukan giliranmu';
+    if (selectedCards.length === 0) return null;
+    if (!selectedCombo) return 'Bukan kombinasi sah';
+    if (!v.currentCombo) return null;
+    if (canPlaySelected) return null;
+
+    if (selectedCombo.type === 'bomb') {
+      if (v.currentCombo.type === 'single' && rankOf(v.currentCombo.cards[0]) !== 2) {
+        return 'Bom hanya bisa melawan kartu 2 atau Bom lain';
+      }
+      return 'Kalah nilai dari Bom di meja';
+    }
+    if (v.currentCombo.type === 'bomb') {
+      return 'Meja di-Bom! Perlu Bom lebih tinggi';
+    }
+    if (selectedCombo.count !== v.currentCombo.count) {
+      return `Harus lawan ${v.currentCombo.count} kartu`;
+    }
+    if (selectedCombo.count === 5) {
+      return 'Kombinasi 5 kartu kalah nilai';
+    }
+    return `Kalah tinggi dari meja`;
+  }, [isMyTurn, selectedCards.length, selectedCombo, v.currentCombo, canPlaySelected]);
 
   // Pengumuman kartu pembuka 3♠: muncul sekali di awal ronde 1 saat seluruh 3 selesai keluar
   const [revealOpening, setRevealOpening] = useState<TongkronganView['opening']>(null);
@@ -355,7 +376,7 @@ export function TongkronganTable({
                     onClick={handleDiscard3}
                     style={{ boxShadow: '0 0 16px rgba(229, 178, 66, 0.4)' }}
                   >
-                    🃏 Keluarkan Kartu 3 ({myThrees.map(cardLabel).join(', ')})
+                    🃏 Buang Kartu 3
                   </button>
                 ) : (
                   <span className="badge" style={{ padding: '8px 16px', fontSize: '0.88rem' }}>
@@ -365,35 +386,27 @@ export function TongkronganTable({
               </div>
             ) : (
               <>
-                {/* Status seleksi kartu (di dock agar tidak menambah tinggi area meja) */}
+                {/* Status seleksi kartu terintegrasi rapi & tidak melipat berantakan */}
                 {selectedCards.length > 0 && (
-                  <div className="row small" style={{ justifyContent: 'center', gap: 8, flexDirection: 'column', alignItems: 'center' }}>
-                    <div className="row small" style={{ justifyContent: 'center', gap: 8 }}>
-                      <span className={`badge${selectedCombo && canPlaySelected ? ' ok' : ' warn'}`}>
-                        {selectedCards.length} kartu dipilih: {selectedCombo ? selectedCombo.description : 'Bukan kombinasi sah'}
+                  <div className="hand-selection-bar">
+                    <div className={`hand-selection-pill ${selectedCombo && canPlaySelected ? 'is-valid' : 'is-invalid'}`}>
+                      <span className="hand-selection-text">
+                        <b>{selectedCards.length} kartu:</b> {selectedCombo ? selectedCombo.description : 'Bukan kombinasi sah'}
                         {!canPlaySelected && blockReason && blockReason !== 'Bukan kombinasi sah' ? ` · ${blockReason}` : ''}
                       </span>
                       <button
-                        className="btn btn-ghost btn-sm"
+                        type="button"
+                        className="hand-selection-cancel"
                         onClick={() => setSelectedCards([])}
-                        style={{ fontSize: '0.72rem', padding: '2px 6px' }}
+                        title="Batal pilih kartu"
+                        aria-label="Batal pilih kartu"
                       >
-                        ✕ Batal Pilih
+                        ✕ Batal
                       </button>
                     </div>
                     {willCloseWithTwo && canPlaySelected && (
-                      <div 
-                        className="badge warn" 
-                        style={{ 
-                          color: '#fff', 
-                          background: 'rgba(229, 62, 62, 0.85)', 
-                          border: '1px solid #feb2b2', 
-                          fontSize: '0.78rem', 
-                          padding: '3px 10px',
-                          boxShadow: '0 0 10px rgba(229, 62, 62, 0.4)'
-                        }}
-                      >
-                        ⚠️ AWAS: Menghabiskan kartu dengan kartu 2 akan langsung membuatmu KALAH di Peringkat ke-4!
+                      <div className="hand-selection-warning">
+                        ⚠️ Menutup dengan kartu 2 otomatis KALAH posisi ke-4!
                       </div>
                     )}
                   </div>
@@ -424,13 +437,12 @@ export function TongkronganTable({
                     }
                   >
                     {willCloseWithTwo && canPlaySelected
-                      ? `⚠️ Mainkan (Penalti Kalah Peringkat 4)`
+                      ? '⚠️ Mainkan (Kalah Peringkat 4)'
                       : isBombingTwo
-                      ? `💣 NGEBOM KARTU 2! (${selectedCombo?.description})`
+                      ? '💣 Ngebom Kartu 2!'
                       : v.currentCombo
                       ? 'Lawan Meja'
                       : 'Mainkan Kartu'}
-                    {!isBombingTwo && !willCloseWithTwo && selectedCombo && canPlaySelected ? ` (${selectedCombo.description})` : ''}
                   </button>
 
                   {v.currentCombo !== null && (

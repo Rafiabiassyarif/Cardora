@@ -152,39 +152,59 @@ export function UniversalTable({
 
         {/* Tombol Aksi di Dock */}
         {dock && createPortal(
-          <div className="actions" style={{ justifyContent: 'center', gap: 10 }}>
+          <>
             {selectedCards.length > 0 && (
-              <button
-                className="btn btn-gold btn-lg"
-                onClick={handlePlay}
-                style={{ boxShadow: '0 0 16px rgba(229, 178, 66, 0.4)' }}
-              >
-                <IconPlay size={16} /> Mainkan ({selectedCards.length} Kartu)
-              </button>
+              <div className="hand-selection-bar">
+                <div className="hand-selection-pill is-valid">
+                  <span className="hand-selection-text">
+                    <b>{selectedCards.length} kartu dipilih</b>
+                  </span>
+                  <button
+                    type="button"
+                    className="hand-selection-cancel"
+                    onClick={() => setSelectedCards([])}
+                    title="Batal pilih kartu"
+                    aria-label="Batal pilih kartu"
+                  >
+                    ✕ Batal
+                  </button>
+                </div>
+              </div>
             )}
+            <div className="actions" style={{ justifyContent: 'center', gap: 10 }}>
+              {selectedCards.length > 0 && (
+                <button
+                  className="btn btn-gold btn-lg"
+                  onClick={handlePlay}
+                  style={{ boxShadow: '0 0 16px rgba(229, 178, 66, 0.4)' }}
+                >
+                  <IconPlay size={16} /> Mainkan ({selectedCards.length})
+                </button>
+              )}
 
-            {v.legal?.canDraw !== false && (
-              <button
-                className="btn btn-lg"
-                disabled={!isMyTurn}
-                onClick={handleDraw}
-                title="Ambil 1 kartu dari deck"
-              >
-                <IconPlus size={16} /> Ambil Kartu (Draw)
-              </button>
-            )}
+              {v.legal?.canDraw !== false && (
+                <button
+                  className="btn btn-lg"
+                  disabled={!isMyTurn}
+                  onClick={handleDraw}
+                  title="Ambil 1 kartu dari deck"
+                >
+                  <IconPlus size={16} /> Ambil Kartu
+                </button>
+              )}
 
-            {v.legal?.canPass !== false && (
-              <button
-                className="btn btn-lg"
-                disabled={!isMyTurn}
-                onClick={handlePass}
-                title="Lewati giliran ini"
-              >
-                Lewati (Pass)
-              </button>
-            )}
-          </div>,
+              {v.legal?.canPass !== false && (
+                <button
+                  className="btn btn-lg"
+                  disabled={!isMyTurn}
+                  onClick={handlePass}
+                  title="Lewati giliran ini"
+                >
+                  Lewati
+                </button>
+              )}
+            </div>
+          </>,
           dock
         )}
       </div>

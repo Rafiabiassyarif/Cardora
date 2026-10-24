@@ -89,11 +89,11 @@ export function PlayerHand({
   }, [cards, manual, mode, rankValue]);
 
   const n = sorted.length;
-  // Kipas melebar untuk sedikit kartu, merapat untuk banyak kartu.
-  const step = n <= 1 ? 0 : Math.min(5, 30 / (n - 1));
+  // Kipas melebar untuk sedikit kartu, merapat untuk banyak kartu (responsif ponsel).
+  const step = n <= 1 ? 0 : Math.min(3.8, 24 / (n - 1));
   const half = Math.max(1, (n - 1) / 2);
-  const arc = 12 / (half * half); // ujung kipas turun maksimal ±12px
-  const overlap = n >= 20 ? 0.66 : n >= 15 ? 0.6 : n >= 11 ? 0.52 : n >= 8 ? 0.42 : n >= 5 ? 0.3 : 0.12;
+  const arc = 9 / (half * half); // ujung kipas turun maksimal ±9px agar tidak menyentuh tepi felt
+  const overlap = n >= 20 ? 0.68 : n >= 14 ? 0.62 : n >= 10 ? 0.58 : n >= 7 ? 0.44 : n >= 4 ? 0.32 : 0.12;
 
   const onPointerDown = (e: React.PointerEvent, card: Card) => {
     if (e.button !== 0) return;

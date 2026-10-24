@@ -1081,7 +1081,12 @@ input[type=range] {
 }
 
 /* ---------- Pilihan tombol (pengganti dropdown) ---------- */
-.choice-group,
+.choice-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .cat-player-chips {
   display: flex;
   flex-wrap: wrap;
@@ -1091,31 +1096,40 @@ input[type=range] {
 .choice {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: 38px;
-  padding: 7px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--hair-2);
-  background: var(--paper);
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--hair-2);
+  background: #FFFFFF;
   color: var(--ink-2);
   font-weight: 700;
   font-size: 0.86rem;
-  line-height: 1.2;
+  line-height: 1.25;
   text-align: left;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition: all 0.16s ease;
+  box-shadow: 0 1px 2px rgba(60, 45, 30, 0.02);
 }
 
 .choice:hover:not(:disabled) {
   color: var(--ink);
-  background: #FFF6EA;
-  border-color: #D4C3AC;
+  background: #FFFDF9;
+  border-color: #CCA88E;
+  transform: translateY(-1px);
 }
 
 .choice.on {
-  color: #fff;
-  background: var(--terra, #C2694A);
+  color: #9A4325;
+  background: linear-gradient(135deg, #FFF8F4 0%, #FAECE3 100%);
   border-color: var(--terra, #C2694A);
+  box-shadow: 0 2px 6px rgba(194, 105, 74, 0.12);
+}
+
+.cat-player-chips .choice {
+  border-radius: 999px;
+  min-height: 36px;
+  padding: 6px 14px;
 }
 
 .choice:disabled {
@@ -1131,6 +1145,247 @@ input[type=range] {
 .choice-icon {
   font-size: 1rem;
   line-height: 1;
+}
+
+/* ==========================================================================
+   OptionsForm — Pristine, Consistent Game Settings Architecture
+   ========================================================================== */
+.options-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.opt-card {
+  position: relative;
+  background: #FFFFFF;
+  border: 1.5px solid var(--hair-2);
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(60, 45, 30, 0.03);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.opt-card:hover {
+  border-color: #D4C3AC;
+  box-shadow: 0 3px 10px rgba(60, 45, 30, 0.06);
+}
+
+.opt-card-boolean {
+  cursor: pointer;
+  user-select: none;
+}
+
+.opt-card-boolean:hover {
+  background: #FFFCF8;
+}
+
+.opt-card-boolean.is-checked {
+  background: #FFFDFB;
+  border-color: #E2BCAB;
+}
+
+.opt-header-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.opt-icon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(194, 105, 74, 0.09);
+  color: var(--terra, #C2694A);
+  font-size: 1.15rem;
+  line-height: 1;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(194, 105, 74, 0.12);
+}
+
+.opt-info {
+  flex: 1;
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.opt-title-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.opt-title {
+  font-family: var(--font-display, inherit);
+  font-size: 0.94rem;
+  font-weight: 800;
+  color: var(--ink, #2C241B);
+  line-height: 1.3;
+}
+
+.opt-current-badge {
+  font-size: 0.72rem;
+  font-weight: 750;
+  color: #9A4325;
+  background: rgba(194, 105, 74, 0.1);
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(194, 105, 74, 0.2);
+}
+
+.opt-help {
+  font-size: 0.78rem;
+  color: var(--ink-3, #7E7265);
+  margin: 3px 0 0 0;
+  line-height: 1.4;
+}
+
+.opt-action {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 8px;
+}
+
+/* Boolean switch wrap */
+.opt-switch-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.opt-switch-status {
+  font-size: 0.76rem;
+  font-weight: 750;
+  color: var(--ink-3, #7E7265);
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--cream-2, #F3ECE2);
+  transition: all 0.15s ease;
+}
+
+.opt-switch-status.is-on {
+  color: #15803D;
+  background: #EAF8EE;
+}
+
+/* Choices Container & Grid */
+.opt-choices-wrap {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--hair-2);
+}
+
+.opt-choices-grid {
+  display: grid;
+  gap: 8px;
+}
+
+/* Dual choices (like 2 opening rules, or 2 penalty options) */
+.opt-choices-grid.is-pair {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+/* Up to 4 choices */
+.opt-choices-grid.is-quartet {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+/* Multiple choices (like turnSeconds 0s, 10s, 15s, 20s, 30s) */
+.opt-choices-grid.is-multi {
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+}
+
+/* Choice Button */
+.opt-choice-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1.5px solid var(--hair-2);
+  background: #FAF7F2;
+  color: var(--ink-2);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  box-shadow: 0 1px 2px rgba(60, 45, 30, 0.02);
+}
+
+.opt-choice-btn:hover:not(:disabled) {
+  background: #FFFFFF;
+  border-color: #CCA88E;
+  color: var(--ink);
+  transform: translateY(-1px);
+}
+
+.opt-choice-btn.is-active {
+  background: linear-gradient(135deg, #FFF8F4 0%, #FAECE3 100%);
+  border-color: var(--terra, #C2694A);
+  color: #9A4325;
+  box-shadow: 0 2px 8px rgba(194, 105, 74, 0.12);
+}
+
+.opt-choice-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Indicator Circle */
+.opt-choice-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--hair-2);
+  background: #FFFFFF;
+  color: transparent;
+  font-size: 0.72rem;
+  font-weight: 900;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.opt-choice-indicator.is-active {
+  background: var(--terra, #C2694A);
+  border-color: var(--terra, #C2694A);
+  color: #FFFFFF;
+  box-shadow: 0 1px 3px rgba(194, 105, 74, 0.3);
+}
+
+/* Choice Text Wrap */
+.opt-choice-text-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.opt-choice-main {
+  font-size: 0.86rem;
+  font-weight: 750;
+  line-height: 1.25;
+  color: inherit;
+}
+
+.opt-choice-sub {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-3, #7E7265);
+  line-height: 1.2;
+}
+
+.opt-choice-btn.is-active .opt-choice-sub {
+  color: #B35839;
 }
 
 /* ---------- Stepper input (untuk angka dengan tombol +/- tactile) ---------- */
@@ -1837,35 +2092,40 @@ input[type=range] {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: 12px;
-  padding-bottom: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
   border-bottom: 1px solid var(--hair-2);
 }
 
 .setup-preset-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: var(--cream-2);
-  border: 1px solid var(--hair-2);
-  color: var(--ink);
-  font-size: 0.82rem;
+  gap: 7px;
+  padding: 8px 14px;
+  min-height: 38px;
+  border-radius: 12px;
+  background: #FFFFFF;
+  border: 1.5px solid var(--hair-2);
+  color: var(--ink-2);
+  font-size: 0.84rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.16s ease;
+  box-shadow: 0 1px 2px rgba(60, 45, 30, 0.02);
 }
 
 .setup-preset-pill:hover {
-  background: #FFF6EA;
-  border-color: #D4C3AC;
+  background: #FFFDF9;
+  border-color: #CCA88E;
+  color: var(--ink);
+  transform: translateY(-1px);
 }
 
 .setup-preset-pill.is-active {
-  background: rgba(194, 105, 74, 0.14);
-  border-color: rgba(194, 105, 74, 0.35);
+  background: linear-gradient(135deg, #FFF8F4 0%, #FAECE3 100%);
+  border-color: var(--terra, #C2694A);
   color: #9A4325;
+  box-shadow: 0 2px 6px rgba(194, 105, 74, 0.12);
 }
 
 /* 7. Action Launch Pad */

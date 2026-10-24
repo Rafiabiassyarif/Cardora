@@ -18,6 +18,14 @@ body:has(.table-page) {
   text-shadow: none;
 }
 
+.table-page .table-bar .title .title-short {
+  display: none;
+}
+
+.table-page .series-badge-short {
+  display: none;
+}
+
 .table-page .table-bar .title .muted {
   color: var(--ink-3);
 }
@@ -442,15 +450,24 @@ body:has(.table-page) {
 }
 
 /* --- Tombol aksi di dock: datar & lembut, warna dibedakan per aksi --- */
+.table-page .dock .actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
 .table-page .dock .btn {
   position: relative;
-  overflow: hidden;
   min-height: 50px;
   border: 1px solid var(--sky-line);
   border-radius: 16px;
   color: var(--sky-text);
   font-weight: 800;
-  font-size: 0.98rem;
+  font-size: 0.96rem;
   letter-spacing: 0.01em;
   text-transform: none;
   text-shadow: none;
@@ -458,6 +475,15 @@ body:has(.table-page) {
   -webkit-backdrop-filter: none;
   background: var(--sky-soft);
   box-shadow: var(--shadow-sm);
+  white-space: nowrap;
+  padding: 10px 22px;
+  max-width: 260px;
+  flex: 1 1 auto;
+}
+
+.table-page .dock .actions .btn:only-child {
+  max-width: 280px;
+  width: auto;
 }
 
 .table-page .dock .btn::after {
@@ -526,6 +552,97 @@ body:has(.table-page) {
   background: rgba(255, 253, 249, 0.7);
   box-shadow: none;
   text-transform: none;
+}
+
+/* ==========================================================================
+   Selection Pill & Action Bars in Table Dock
+   ========================================================================== */
+.hand-selection-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto 6px;
+  animation: fxDockIn 0.25s var(--ease-soft, ease) backwards;
+}
+
+.hand-selection-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 6px 4px 14px;
+  border-radius: 999px;
+  background: rgba(255, 253, 249, 0.96);
+  border: 1.5px solid var(--hair-2);
+  box-shadow: 0 2px 8px rgba(70, 50, 30, 0.08);
+  max-width: min(94vw, 420px);
+  transition: all 0.16s ease;
+}
+
+.hand-selection-pill.is-valid {
+  border-color: #84CC16;
+  background: linear-gradient(135deg, #F7FDF4 0%, #EEF9E8 100%);
+}
+
+.hand-selection-pill.is-invalid {
+  border-color: #E2A78E;
+  background: #FFF9F7;
+}
+
+.hand-selection-text {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.hand-selection-pill.is-valid .hand-selection-text {
+  color: #1E6B2A;
+}
+
+.hand-selection-pill.is-invalid .hand-selection-text {
+  color: #B93815;
+}
+
+.hand-selection-cancel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 10px;
+  min-height: 26px;
+  border-radius: 999px;
+  background: rgba(70, 50, 30, 0.08);
+  border: none;
+  color: var(--ink-2);
+  font-size: 0.76rem;
+  font-weight: 750;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.14s ease;
+}
+
+.hand-selection-cancel:hover {
+  background: rgba(194, 105, 74, 0.18);
+  color: #9A4325;
+}
+
+.hand-selection-warning {
+  font-size: 0.74rem;
+  font-weight: 750;
+  color: #FFFFFF;
+  background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%);
+  padding: 3px 12px;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.35);
+  animation: pulse 1.5s infinite;
+  text-align: center;
+  max-width: min(94vw, 420px);
 }
 
 /* Panel raise: kapsul krem. */
@@ -647,85 +764,241 @@ body:has(.table-page) {
   }
 }
 
-/* Layar sempit (HP): rim tipis, sudut lebih kecil. */
+/* Layar sempit (HP): tata letak responsif, rim felt seimbang, kartu tangan 100% simetris di tengah. */
 @media (max-width: 560px) {
   .table-page .felt {
-    border-radius: 60px / 50px;
-    border-width: 8px;
-    padding: 16px 10px 8px;
-    margin: 2px 2px 10px;
+    border-radius: 46px / 38px;
+    border-width: 7px;
+    padding: 10px 8px 12px;
+    margin: 2px 4px 6px;
+    min-height: 0;
   }
 
   .table-page .felt::after {
-    inset: 8px 12px;
-    border-radius: 52px / 42px;
-  }
-
-  .table-page .seat {
-    min-width: 74px;
-  }
-
-  .table-page .opp-slot {
-    transform: translateY(calc(var(--drop, 0) * 24px));
-  }
-
-  .table-page .pcard.small {
-    --card-w: 26px;
-  }
-
-  .table-page .cards.overlap>.pcard.back+.pcard.back {
-    margin-left: calc(var(--card-w) * -0.72);
+    inset: 6px 8px;
+    border-radius: 40px / 32px;
   }
 
   .table-page .table-bar {
-    gap: 6px;
-    padding: 4px 2px;
+    gap: 4px;
+    padding: 4px 4px 2px;
   }
 
   .table-page .table-bar .btn.icon-btn {
-    width: 34px;
-    height: 34px;
-    min-height: 34px;
+    width: 33px;
+    height: 33px;
+    min-height: 33px;
     font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+
+  .table-page .table-bar .btn.icon-btn svg {
+    width: 15px;
+    height: 15px;
   }
 
   .table-page .table-bar .title {
-    font-size: 0.92rem;
+    font-size: 0.88rem;
+    font-weight: 800;
     min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .table-page .table-bar .title .muted {
     display: none;
   }
 
+  .table-page .table-bar .title .title-full {
+    display: none;
+  }
+
+  .table-page .table-bar .title .title-short {
+    display: inline;
+  }
+
+  .table-page .series-badge-full {
+    display: none;
+  }
+
+  .table-page .series-badge-short {
+    display: inline;
+  }
+
   .table-page .table-bar .badge {
-    padding: 3px 7px;
+    padding: 3px 6px;
     font-size: 0.68rem;
     white-space: nowrap;
   }
 
+  /* Lawan (3 Bot / Pemain di atas) */
+  .table-page .opponents.arc {
+    padding: 0 4px;
+    gap: 2px;
+  }
+
+  .table-page .opp-slot {
+    transform: translateY(calc(var(--drop, 0) * 16px));
+    min-width: 0;
+  }
+
+  .table-page .seat {
+    min-width: 66px;
+    padding: 0 2px;
+  }
+
   .table-page .seat .avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 1.3rem;
+  }
+
+  .table-page .seat-name {
+    font-size: 0.72rem;
+    max-width: 74px;
+  }
+
+  .table-page .seat-sub {
+    font-size: 0.65rem;
+  }
+
+  .table-page .pcard.small {
+    --card-w: 22px;
+  }
+
+  .table-page .cards.overlap>.pcard.back+.pcard.back {
+    margin-left: calc(var(--card-w) * -0.74);
+  }
+
+  /* Area tengah meja (kartu kombinasi & pot) */
+  .table-page .center-area {
+    gap: 4px;
+    padding: 2px 0;
+  }
+
+  .table-page .center-area .small {
+    font-size: 0.74rem;
+  }
+
+  .table-page .combo-cards .pcard {
+    --card-w: 48px;
+  }
+
+  .table-page .pot {
+    font-size: 0.86rem;
+    padding: 3px 12px;
+  }
+
+  /* Area pemain sendiri (me-area) */
+  .table-page .me-area {
+    gap: 4px;
+    width: 100%;
+    position: relative;
+  }
+
+  .table-page .me-area .seat {
+    padding: 3px 12px 3px 3px;
+  }
+
+  .table-page .me-area .seat .avatar {
     width: 44px;
     height: 44px;
-    font-size: 1.4rem;
   }
-}
 
-/* HP: kapsul raise jadi kartu bersudut (isinya terlipat 2 baris), tombol aksi 2×2. */
-@media (max-width: 560px) {
+  .table-page .me-area .seat-name {
+    font-size: 0.82rem;
+  }
+
+  .table-page .me-area .seat-sub {
+    font-size: 0.72rem;
+  }
+
+  /* Kartu tangan: simetris 100% di tengah tanpa terdorong toolbar */
+  .table-page .player-hand {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+  }
+
+  /* Toolbar susun kartu: pindah ke atas-kiri sebagai 3 pil bulat horizontal */
+  .table-page .hand-toolbar {
+    position: absolute;
+    left: 4px;
+    top: -34px;
+    flex-direction: row;
+    gap: 5px;
+    margin-right: 0;
+    padding-bottom: 0;
+    z-index: 25;
+  }
+
+  .table-page .hand-toolbar .chip {
+    width: 29px;
+    height: 29px;
+    min-height: 29px;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: 800;
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 1px 4px rgba(60, 45, 30, 0.12);
+    border: 1px solid var(--hair-2);
+  }
+
+  .table-page .hand-toolbar .chip.on {
+    background: var(--terra);
+    color: #fff;
+    border-color: var(--terra);
+    box-shadow: 0 2px 6px rgba(194, 105, 74, 0.3);
+  }
+
+  /* Kipas kartu di tengah sempurna */
+  .table-page .hand-fan {
+    width: 100%;
+    max-width: 100%;
+    justify-content: center;
+    padding: 4px 0 0;
+  }
+
+  /* Kapsul raise & dock tombol aksi dengan safe-area ponsel */
   .table-page .raise-row {
     border-radius: 20px;
     padding: 6px 12px 8px;
   }
 
+  .table-page .dock {
+    min-height: 52px;
+    padding: 6px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .table-page .dock .actions {
+    gap: 8px;
+    width: 100%;
+    max-width: 440px;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
   .table-page .dock .actions .btn {
-    flex: 1 1 calc(50% - 8px);
+    flex: 1 1 105px;
+    min-height: 46px;
+    font-size: 0.90rem;
+    border-radius: 14px;
     max-width: none;
+    padding: 0 10px;
+    white-space: nowrap;
+  }
+
+  .table-page .dock .actions .btn .btn-extra-desc {
+    display: none;
   }
 }
 
-/* HP kecil: giliran sudah ditandai cincin avatar + countdown → badge "Giliranmu" disembunyikan. */
-@media (max-width: 420px) {
+/* HP sangat kecil (<= 400px): sembunyikan badge "Giliranmu" di bar atas karena sudah ada animasi avatar */
+@media (max-width: 400px) {
   .table-page .table-bar .badge.ok {
     display: none;
   }
