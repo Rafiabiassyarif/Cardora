@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { log } from './logger';
+import { newEconomy, normalizeEconomy, type EconomyState } from '@kuypoker/engine';
 
 export interface StoredUser {
   id: number;
@@ -17,6 +18,8 @@ export interface StoredUser {
   history: Array<{ game_id: string; finished_at: string; players: number; rank: number; score: number }>;
   /** ID pengguna yang ditambahkan sebagai teman (satu arah). */
   friends?: number[];
+  /** Chip/XP/misi/pencapaian. Server yang menghitung — klien hanya menampilkan. */
+  economy?: EconomyState;
 }
 
 const totals = (u: StoredUser) => Object.values(u.stats).reduce((a, s) => ({ wins: a.wins + s.wins, played: a.played + s.played }), { wins: 0, played: 0 });
@@ -44,6 +47,7 @@ function ensureLoaded() {
       const raw = fs.readFileSync(dataFile(), 'utf-8');
       const data: StoredUser[] = JSON.parse(raw);
       for (const u of data) {
+        u.economy = normalizeEconomy(u.economy);
         usersMap.set(u.id, u);
         usernameIndex.set(u.username.toLowerCase(), u.id);
         if (u.googleSub) googleIndex.set(u.googleSub, u.id);
@@ -108,6 +112,7 @@ export const localUserStore = {
       createdAt: Date.now(),
       stats: {},
       history: [],
+      economy: newEconomy(),
       ...(extra.googleSub ? { googleSub: extra.googleSub } : {}),
       ...(extra.email ? { email: extra.email } : {}),
     };
@@ -185,5 +190,22 @@ export const localUserStore = {
     ensureLoaded();
     return [...usersMap.values()].map(u => ({ ...u, ...totals(u) })).filter(u => u.played > 0)
       .sort((a, b) => b.wins - a.wins || a.played - b.played).slice(0, limit);
+  },
+
+  /** Ekonomi akun (chip/XP/misi). */
+  async getEconomy(id: number): Promise<EconomyState | null> {
+    ensureLoaded();
+    const u = usersMap.get(id);
+    if (!u) return null;
+    u.economy = normalizeEconomy(u.economy);
+    return u.economy;
+  },
+
+  async setEconomy(id: number, eco: EconomyState): Promise<void> {
+    ensureLoaded();
+    const u = usersMap.get(id);
+    if (!u) return;
+    u.economy = eco;
+    saveToFile();
   },
 };

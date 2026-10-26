@@ -73,6 +73,7 @@ export default function App() {
   // Validasi token tersimpan sekali saat aplikasi dibuka.
   useEffect(() => {
     validateSession().then(r => {
+      if (r === 'ok') void import('./lib/economy').then(m => m.refreshEconomy());
       if (r === 'expired') {
         emitNotice('warn', 'Sesi akunmu berakhir, silakan masuk lagi.');
         if (!isSignedIn()) setRoute({ name: 'landing' });

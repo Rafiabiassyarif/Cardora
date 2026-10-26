@@ -130,6 +130,9 @@ export const useAppNotices = () =>
   );
 
 const KEY = 'cardora.v2';
+
+/** True bila chip dikelola server (akun terdaftar). Tamu memakai perangkat ini. */
+const accountMode = () => !!data.session.authToken;
 const randomName = () => `Pemain${Math.floor(100 + Math.random() * 900)}`;
 
 export function defaultQuests(): Quest[] {
@@ -489,13 +492,29 @@ function trackAchievementInternal(d: Data, id: string, amount: number, absolute 
   }
 }
 
+const SERVER_EVENTS: Record<string, 'chat' | 'theme' | 'allin' | 'blackjack21'> = {
+  social_chatter: 'chat',
+  table_designer: 'theme',
+  allin_hero: 'allin',
+  blackjack_21: 'blackjack21',
+};
+
 export function trackAchievement(id: string, amount = 1, absolute = false) {
+  if (accountMode()) {
+    const ev = SERVER_EVENTS[id];
+    if (ev) void import('./economy').then(m => m.sendEconomyEvent(ev));
+    return;
+  }
   update(d => {
     trackAchievementInternal(d, id, amount, absolute);
   });
 }
 
-export function claimAchievement(id: string): boolean {
+export async function claimAchievement(id: string): Promise<boolean> {
+  if (accountMode()) {
+    try { const r = await (await import('./economy')).claimRemote('achievement', id); return !!r; }
+    catch (e) { emitNotice('warn', (e as Error).message); return false; }
+  }
   let ok = false;
   update(d => {
     const a = d.economy.achievements.find(x => x.id === id);
@@ -509,6 +528,12 @@ export function claimAchievement(id: string): boolean {
 }
 
 export function recordResult(r: LocalResult) {
+  if (accountMode()) {
+    // Chip/XP/misi dihitung server; di sini hanya riwayat lokal untuk tampilan.
+    update(d => { d.history = [r, ...d.history].slice(0, 100); });
+    void import('./economy').then(m => m.settleMatch({ gameId: r.gameId, rank: r.rank, players: r.players, mode: r.mode }));
+    return;
+  }
   update(d => {
     d.history = [r, ...d.history].slice(0, 100);
 
@@ -540,7 +565,11 @@ export function recordResult(r: LocalResult) {
   });
 }
 
-export function claimQuest(questId: string): boolean {
+export async function claimQuest(questId: string): Promise<boolean> {
+  if (accountMode()) {
+    try { const r = await (await import('./economy')).claimRemote('quest', questId); return !!r; }
+    catch (e) { emitNotice('warn', (e as Error).message); return false; }
+  }
   let ok = false;
   update(d => {
     const q = d.economy.quests.find(x => x.id === questId);
@@ -553,7 +582,16 @@ export function claimQuest(questId: string): boolean {
   return ok;
 }
 
-export function claimDailyBonus(): { ok: boolean; chips: number; nextInMs: number } {
+export async function claimDailyBonus(): Promise<{ ok: boolean; chips: number; nextInMs: number }> {
+  if (accountMode()) {
+    try {
+      const r = await (await import('./economy')).claimRemote('daily');
+      return { ok: !!r, chips: r?.reward?.chips ?? 0, nextInMs: 24 * 60 * 60 * 1000 };
+    } catch (e) {
+      emitNotice('warn', (e as Error).message);
+      return { ok: false, chips: 0, nextInMs: 0 };
+    }
+  }
   const now = Date.now();
   const cooldown = 24 * 60 * 60 * 1000;
   const left = Math.max(0, data.economy.lastDailyClaim + cooldown - now);
@@ -567,7 +605,16 @@ export function claimDailyBonus(): { ok: boolean; chips: number; nextInMs: numbe
   return { ok: true, chips: reward, nextInMs: cooldown };
 }
 
-export function claimHourlyBonus(): { ok: boolean; chips: number; nextInMs: number } {
+export async function claimHourlyBonus(): Promise<{ ok: boolean; chips: number; nextInMs: number }> {
+  if (accountMode()) {
+    try {
+      const r = await (await import('./economy')).claimRemote('hourly');
+      return { ok: !!r, chips: r?.reward?.chips ?? 0, nextInMs: 60 * 60 * 1000 };
+    } catch (e) {
+      emitNotice('warn', (e as Error).message);
+      return { ok: false, chips: 0, nextInMs: 0 };
+    }
+  }
   const now = Date.now();
   const cooldown = 60 * 60 * 1000;
   const left = Math.max(0, data.economy.lastHourlyClaim + cooldown - now);
@@ -596,7 +643,17 @@ export const BANKRUPT_LIMIT = 2000;
 /** Sisa kuota bantuan hari ini (kuota direset tiap ganti tanggal). */
 export const refillsLeftToday = (eco: Economy) => (eco.lastRefillDate !== new Date().toDateString() ? 3 : eco.freeRefillsToday);
 
-export function claimBankruptcyRefill(): { ok: boolean; chips: number; reason?: 'quota' | 'not_broke' } {
+export async function claimBankruptcyRefill(): Promise<{ ok: boolean; chips: number; reason?: 'quota' | 'not_broke' }> {
+  if (accountMode()) {
+    try {
+      const r = await (await import('./economy')).claimRemote('refill');
+      return { ok: !!r, chips: r?.reward?.chips ?? 0 };
+    } catch (e) {
+      const msg = (e as Error).message;
+      emitNotice('warn', msg);
+      return { ok: false, chips: 0, reason: /kuota/i.test(msg) ? 'quota' : 'not_broke' };
+    }
+  }
   const today = new Date().toDateString();
   let ok = false;
   let reason: 'quota' | 'not_broke' | undefined;
@@ -616,6 +673,10 @@ export function claimBankruptcyRefill(): { ok: boolean; chips: number; reason?: 
 }
 
 export function rebuyChips(amount = 10000): { ok: boolean; added: number } {
+  if (accountMode()) {
+    emitNotice('warn', 'Chip akun tidak bisa ditambah bebas. Pakai bantuan darurat (maks 3×/hari).');
+    return { ok: false, added: 0 };
+  }
   update(d => {
     d.economy.chips += amount;
   });
@@ -625,17 +686,13 @@ export function rebuyChips(amount = 10000): { ok: boolean; added: number } {
 }
 
 export function setFeltTheme(felt: FeltTheme) {
-  update(d => {
-    d.economy.feltTheme = felt;
-    trackAchievementInternal(d, 'table_designer', 1);
-  });
+  update(d => { d.economy.feltTheme = felt; });
+  trackAchievement('table_designer', 1);
 }
 
 export function setCardTheme(card: CardTheme) {
-  update(d => {
-    d.economy.cardTheme = card;
-    trackAchievementInternal(d, 'table_designer', 1);
-  });
+  update(d => { d.economy.cardTheme = card; });
+  trackAchievement('table_designer', 1);
 }
 
 export function toggleBgm(): boolean {

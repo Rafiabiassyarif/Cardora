@@ -43,6 +43,7 @@ export * from './tongkrongan';
 export * from './protocol';
 export * from './generic';
 export * from './tokens';
+export * from './economy';
 export { bohong, type BohongState } from './games/bohong';
 export { kartuWarna, type KartuWarnaState } from './games/kartuWarna';
 export { gaple, type GapleState } from './games/gaple';

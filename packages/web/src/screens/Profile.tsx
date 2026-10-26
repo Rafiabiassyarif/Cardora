@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { AVATARS, catalogById } from '@kuypoker/engine';
-import { useData, update, statsFor } from '../lib/store';
+import { useData, update, statsFor, emitNotice } from '../lib/store';
 import { useFriends } from '../lib/friends';
+import { refreshEconomy } from '../lib/economy';
 import { refreshIdentity } from '../lib/net';
 import { api } from '../lib/auth';
 import { TopBar } from '../components/ui';
@@ -61,13 +62,21 @@ export default function Profile({ onBack, onLogout, onLinkAccount }: { onBack: (
               {session.username ? `Akun Terhubung: @${session.username}` : 'Mode Tamu (Guest Mode)'}
             </div>
             <span className="small muted">
-              {session.username ? 'Nama, avatar & statistik online tersimpan di server' : 'Progres tersimpan di perangkat ini'}
+              {session.username ? 'Chip, XP, level, misi & statistik tersimpan di akun (server) — sinkron di semua perangkat' : 'Chip & progres hanya tersimpan di perangkat ini'}
             </span>
           </div>
         </div>
-        <button className="btn btn-sm" onClick={() => setBackupOpen(true)} title="Cadangkan atau pulihkan data secara mandiri">
-          <IconSave size={14} /> Cadangkan Progres
-        </button>
+        <div className="row" style={{ gap: 6 }}>
+          {session.authToken && (
+            <button className="btn btn-sm" title="Ambil saldo terbaru dari server"
+              onClick={async () => { const ok = await refreshEconomy(); emitNotice(ok ? 'success' : 'warn', ok ? 'Saldo disegarkan dari server.' : 'Gagal menyegarkan saldo.'); }}>
+              Sinkronkan
+            </button>
+          )}
+          <button className="btn btn-sm" onClick={() => setBackupOpen(true)} title="Cadangkan atau pulihkan data secara mandiri">
+            <IconSave size={14} /> Cadangkan Progres
+          </button>
+        </div>
       </div>
 
       {/* VIP Player Card */}

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Modal } from './ui';
 import { 
   useData, 
+  emitNotice,
   claimDailyBonus, 
   claimHourlyBonus, 
   spinLuckyWheel, 
@@ -24,7 +25,9 @@ import {
   type CardTheme,
   type Achievement,
 } from '../lib/store';
+import { WHEEL_PRIZES } from '@kuypoker/engine';
 import { play } from '../lib/sound';
+import { claimRemote } from '../lib/economy';
 import { useFriends, searchUsers, addFriendById, removeFriendById, fetchLeaderboard, type FriendRow, type SearchRow, type RankRow } from '../lib/friends';
 import { AnimatedNumber } from './effects';
 import { IconChat,
@@ -56,16 +59,14 @@ export function WalletHeaderPill({ onOpenStore }: { onOpenStore: () => void }) {
 /* ==========================================================================
    2. Lucky Wheel (Roda Keberuntungan / Spin Harian)
    ========================================================================== */
-const WHEEL_REWARDS = [
-  { label: '500', value: 500, color: '#F6E3D8' },
-  { label: '1.000', value: 1000, color: '#E2EEE4' },
-  { label: '2.500', value: 2500, color: '#F5E3BC' },
-  { label: '5.000', value: 5000, color: '#E3ECF4' },
-  { label: '1.500', value: 1500, color: '#F7E2DF' },
-  { label: '10.000', value: 10000, color: '#E8F0DC' },
-  { label: '2.000', value: 2000, color: '#EFE7DA' },
-  { label: '25.000 ★', value: 25000, color: '#F3D9C4' },
-];
+// Nilai hadiah HARUS sama dengan WHEEL_PRIZES di engine: server memilih indeks,
+// jadi urutan sektor di layar tidak boleh berbeda dari urutan hadiah server.
+const WHEEL_COLORS = ['#F6E3D8', '#E2EEE4', '#F5E3BC', '#E3ECF4', '#F7E2DF', '#E8F0DC', '#EFE7DA', '#F3D9C4'];
+const WHEEL_REWARDS = WHEEL_PRIZES.map((v, i) => ({
+  value: v,
+  label: i === WHEEL_PRIZES.length - 1 ? `${v.toLocaleString('id-ID')} ★` : v.toLocaleString('id-ID'),
+  color: WHEEL_COLORS[i % WHEEL_COLORS.length],
+}));
 
 /** Sektor roda tepat 360/N derajat (conic-gradient) — mulai dari arah jam 12, searah jarum jam.
  *  Sektor i berpusat di i*slice + slice/2, sama dengan rumus target rotasi di spin(). */
@@ -74,6 +75,7 @@ const WHEEL_BG = `conic-gradient(from 0deg, ${WHEEL_REWARDS.map((r, i) => `${r.c
 
 export function LuckyWheelModal({ onClose }: { onClose: () => void }) {
   const eco = useData(d => d.economy);
+  const session = useData(d => d.session);
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [won, setWon] = useState<number | null>(null);
@@ -83,25 +85,36 @@ export function LuckyWheelModal({ onClose }: { onClose: () => void }) {
   const nextSpin = eco.lastSpinTime + cooldown;
   const canSpin = now >= nextSpin || eco.lastSpinTime === 0;
 
-  const spin = () => {
+  const spin = async () => {
     if (spinning || !canSpin) return;
     setSpinning(true);
     setWon(null);
     play('chip');
 
-    // Random prize index
-    const prizeIndex = Math.floor(Math.random() * WHEEL_REWARDS.length);
     const sliceAngle = 360 / WHEEL_REWARDS.length;
-    // Rotate 5 to 7 full circles + slice offset
+    // Hadiah ditentukan server bila login (tidak bisa diakali dari browser).
+    let prizeIndex = Math.floor(Math.random() * WHEEL_REWARDS.length);
+    let serverPrize: number | null = null;
+    if (session.authToken) {
+      try {
+        const r = await claimRemote('spin');
+        const idx = Number(r?.reward?.index);
+        if (Number.isInteger(idx) && idx >= 0 && idx < WHEEL_REWARDS.length) prizeIndex = idx;
+        serverPrize = Number(r?.reward?.chips) || null;
+      } catch (e) {
+        emitNotice('warn', (e as Error).message);
+        setSpinning(false);
+        return;
+      }
+    }
     const extraRotations = (5 + Math.floor(Math.random() * 3)) * 360;
     const targetRotation = rotation + extraRotations + (360 - (prizeIndex * sliceAngle + sliceAngle / 2));
-    
     setRotation(targetRotation);
 
     setTimeout(() => {
-      const prize = WHEEL_REWARDS[prizeIndex].value;
+      const prize = serverPrize ?? WHEEL_REWARDS[prizeIndex].value;
       setWon(prize);
-      spinLuckyWheel(prize);
+      if (!session.authToken) spinLuckyWheel(prize);
       setSpinning(false);
       play('win');
     }, 4000);
@@ -162,8 +175,8 @@ export function QuestsModal({ onClose }: { onClose: () => void }) {
   const quests = useData(d => d.economy.quests);
   const eco = useData(d => d.economy);
 
-  const handleClaim = (id: string) => {
-    const ok = claimQuest(id);
+  const handleClaim = async (id: string) => {
+    const ok = await claimQuest(id);
     if (ok) play('win');
   };
 
@@ -282,6 +295,7 @@ export function LeaderboardModal({ onClose }: { onClose: () => void }) {
    ========================================================================== */
 export function StoreModal({ onClose }: { onClose: () => void }) {
   const eco = useData(d => d.economy);
+  const session = useData(d => d.session);
   const [msg, setMsg] = useState<string | null>(null);
   // Detik berjalan agar label hitung mundur ikut diperbarui.
   const [now, setNow] = useState(Date.now());
@@ -296,24 +310,24 @@ export function StoreModal({ onClose }: { onClose: () => void }) {
     return h > 0 ? `${h}j ${String(m).padStart(2, '0')}m` : `${m}:${String(sec).padStart(2, '0')}`;
   };
 
-  const handleDaily = () => {
-    const res = claimDailyBonus();
+  const handleDaily = async () => {
+    const res = await claimDailyBonus();
     if (res.ok) {
       setMsg(`🎉 Berhasil klaim +${res.chips.toLocaleString('id-ID')} Chip bonus harian!`);
       play('win');
     }
   };
 
-  const handleHourly = () => {
-    const res = claimHourlyBonus();
+  const handleHourly = async () => {
+    const res = await claimHourlyBonus();
     if (res.ok) {
       setMsg(`🎉 Berhasil klaim +${res.chips.toLocaleString('id-ID')} Chip bonus berkala!`);
       play('chip');
     }
   };
 
-  const handleBankruptcy = () => {
-    const res = claimBankruptcyRefill();
+  const handleBankruptcy = async () => {
+    const res = await claimBankruptcyRefill();
     if (res.ok) {
       setMsg(`🛡️ Bantuan Kebangkrutan: +${res.chips.toLocaleString('id-ID')} Chip ditambahkan! Sisa hari ini: ${Math.max(0, refills - 1)}x.`);
       play('chip');
@@ -384,6 +398,11 @@ export function StoreModal({ onClose }: { onClose: () => void }) {
 
         <p className="muted small center" style={{ marginTop: 12 }}>
           Cardora bersifat 100% hiburan & permainan santai. Seluruh chip adalah chip virtual tanpa uang sungguhan.
+        </p>
+        <p className="muted small center" style={{ marginTop: 4 }}>
+          {session.authToken
+            ? '🔒 Saldo chip tersimpan di akunmu (server) — sinkron di semua perangkat.'
+            : '💾 Kamu bermain sebagai tamu: saldo chip hanya tersimpan di perangkat ini.'}
         </p>
       </div>
     </Modal>
@@ -627,7 +646,7 @@ export function AchievementsModal({ onClose }: { onClose: () => void }) {
                   ) : a.unlocked ? (
                     <button 
                       className="btn btn-gold btn-sm" 
-                      onClick={() => claimAchievement(a.id)}
+                      onClick={async () => { if (await claimAchievement(a.id)) play('win'); }}
                     >
                       Klaim Hadiah
                     </button>
@@ -713,22 +732,21 @@ export function RebuyModal({
   onRebuySuccess?: (added: number) => void;
 }) {
   const eco = useData(d => d.economy);
+  const session = useData(d => d.session);
+  const account = !!session.authToken;
   const options = [5000, 10000, 25000, 50000];
 
   const handleRebuy = (amount: number) => {
-    if (eco.chips < amount) {
-      // Wallet kurangan, beri bonus darurat jika benar-benar habis
-      rebuyChips(amount);
-    } else {
-      rebuyChips(amount);
-    }
+    const r = rebuyChips(amount);
+    if (!r.ok) return;
     onRebuySuccess?.(amount);
     onClose();
   };
 
-  const handleFreeRefill = () => {
-    claimBankruptcyRefill();
-    onRebuySuccess?.(2500);
+  const handleFreeRefill = async () => {
+    const r = await claimBankruptcyRefill();
+    if (!r.ok) return;
+    onRebuySuccess?.(r.chips || 2500);
     onClose();
   };
 
@@ -748,22 +766,30 @@ export function RebuyModal({
           </div>
         </div>
 
-        <p className="muted small" style={{ margin: '10px 0 4px' }}>
-          Pilih nominal chip tambahan yang ingin Anda bawa ke meja:
-        </p>
-
-        <div className="grid-2">
-          {options.map(amt => (
-            <button 
-              key={amt} 
-              className="btn btn-gold" 
-              onClick={() => handleRebuy(amt)}
-              style={{ padding: '12px 10px' }}
-            >
-              + {amt.toLocaleString('id-ID')} Chip
-            </button>
-          ))}
-        </div>
+        {account ? (
+          <p className="muted small" style={{ margin: '10px 0 4px' }}>
+            Chip akunmu dikelola server dan tidak bisa ditambah bebas. Kalau saldo habis,
+            gunakan Bantuan Darurat (maksimal 3× sehari).
+          </p>
+        ) : (
+          <>
+            <p className="muted small" style={{ margin: '10px 0 4px' }}>
+              Pilih nominal chip tambahan yang ingin Anda bawa ke meja:
+            </p>
+            <div className="grid-2">
+              {options.map(amt => (
+                <button
+                  key={amt}
+                  className="btn btn-gold"
+                  onClick={() => handleRebuy(amt)}
+                  style={{ padding: '12px 10px' }}
+                >
+                  + {amt.toLocaleString('id-ID')} Chip
+                </button>
+              ))}
+            </div>
+          </>
+        )}
 
         {eco.freeRefillsToday > 0 && (
           <div className="card-box stack" style={{ marginTop: 8 }}>

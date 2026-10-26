@@ -2,7 +2,14 @@
 import { Router, type Request, type Response, type NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { AVATARS, CATALOG } from '@kuypoker/engine';
+import {
+  AVATARS, CATALOG,
+  QUESTS, ACHIEVEMENTS, XP_PER_LEVEL,
+  newEconomy, normalizeEconomy, levelForXp, vipTierForLevel, refillsLeft,
+  settleGame, applyEvent, claimQuest, claimAchievement, claimDaily, claimHourly, spinWheel, claimRefill,
+  type EconomyState, type ClaimResult, START_CHIPS, MAX_MIGRATE_CHIPS,
+} from '@kuypoker/engine';
+import { cryptoRng } from '@kuypoker/engine';
 import { config } from './config';
 import { db, dbEnabled } from './db';
 import { RateLimiter } from './rateLimit';
@@ -289,6 +296,180 @@ export function apiRouter(presence: Presence = () => 'offline'): Router {
             GROUP BY u.id HAVING SUM(s.played) > 0 ORDER BY wins DESC, played ASC LIMIT 20`)).rows.map(u => ({ ...pub(u), wins: u.wins, played: u.played }))
       : (await localUserStore.leaderboard()).map(u => ({ ...pub(u), wins: u.wins, played: u.played }));
     return res.json({ players: rows.map((p, i) => ({ rank: i + 1, ...p })) });
+  }));
+
+  // ---------------- Ekonomi akun (chip/XP/level/misi/pencapaian) ----------------
+  // Semua hadiah dihitung di sini. Klien tidak pernah mengirim jumlah chip.
+  const ecoLimiter = new RateLimiter(30, 1);   // 30 aksi/menit per IP
+  const settleLimiter = new RateLimiter(12, 12 / 60); // maks 12 hasil/menit per IP
+  const lastSettle = new Map<number, number>();
+
+  const view = (eco: EconomyState) => ({
+    chips: eco.chips,
+    xp: eco.xp,
+    level: levelForXp(eco.xp),
+    xpForNextLevel: XP_PER_LEVEL,
+    vipTier: vipTierForLevel(levelForXp(eco.xp)),
+    lastDailyClaim: eco.lastDailyClaim,
+    lastHourlyClaim: eco.lastHourlyClaim,
+    lastSpinTime: eco.lastSpinTime,
+    freeRefillsToday: refillsLeft(eco),
+    quests: QUESTS.map(q => ({
+      ...q,
+      current: eco.quests[q.id]?.current ?? 0,
+      completed: (eco.quests[q.id]?.current ?? 0) >= q.target,
+      claimed: !!eco.quests[q.id]?.claimed,
+    })),
+    achievements: ACHIEVEMENTS.map(a => ({
+      ...a,
+      current: eco.achievements[a.id]?.current ?? 0,
+      unlocked: (eco.achievements[a.id]?.current ?? 0) >= a.target,
+      claimed: !!eco.achievements[a.id]?.claimed,
+    })),
+  });
+
+  /** Baca → ubah → simpan. DB: satu baris JSONB per pengguna. */
+  async function withEconomy<T>(userId: number, fn: (eco: EconomyState) => { state?: EconomyState; out: T }): Promise<T> {
+    if (dbEnabled()) {
+      const row = (await db()!.query('SELECT economy FROM user_economy WHERE user_id=$1', [userId])).rows[0];
+      const cur = normalizeEconomy(row?.economy);
+      const { state, out } = fn(cur);
+      if (state) {
+        await db()!.query(
+          `INSERT INTO user_economy(user_id, economy, updated_at) VALUES ($1,$2,now())
+           ON CONFLICT (user_id) DO UPDATE SET economy = EXCLUDED.economy, updated_at = now()`,
+          [userId, JSON.stringify(state)]);
+      }
+      return out;
+    }
+    const cur = (await localUserStore.getEconomy(userId)) ?? newEconomy();
+    const { state, out } = fn(cur);
+    if (state) await localUserStore.setEconomy(userId, state);
+    return out;
+  }
+
+  const needAuth = (req: Request, res: Response): number | null => {
+    const id = verifyToken(bearer(req));
+    if (!id) { res.status(401).json({ error: 'Masuk dulu untuk memakai chip akun' }); return null; }
+    return id;
+  };
+
+  r.get('/economy', wrap(async (req, res) => {
+    const id = needAuth(req, res);
+    if (!id) return;
+    const eco = await withEconomy(id, eco => ({ out: eco }));
+    return res.json({ economy: view(eco) });
+  }));
+
+  /** Hasil pertandingan (mode bot atau online) → chip & XP dari server. */
+  r.post('/economy/settle', wrap(async (req, res) => {
+    const id = needAuth(req, res);
+    if (!id) return;
+    if (!settleLimiter.take(`settle:${id}`)) return res.status(429).json({ error: 'Terlalu banyak hasil dikirim, tunggu sebentar' });
+    const { gameId, rank, players, mode } = req.body ?? {};
+    if (typeof gameId !== 'string' || !gameId) return res.status(400).json({ error: 'gameId tidak valid' });
+    if (!Number.isFinite(Number(rank)) || !Number.isFinite(Number(players))) return res.status(400).json({ error: 'Hasil tidak valid' });
+    // Jeda minimal 4 detik antar hasil: pertandingan tidak mungkin selesai lebih cepat dari itu.
+    const now = Date.now();
+    const prev = lastSettle.get(id) ?? 0;
+    if (now - prev < 4000) return res.status(429).json({ error: 'Hasil dikirim terlalu cepat' });
+    lastSettle.set(id, now);
+
+    const out = await withEconomy(id, eco => {
+      const s = settleGame(eco, { gameId, rank: Number(rank), players: Number(players), mode: mode === 'online' ? 'online' : 'bot' });
+      return { state: s.state, out: s };
+    });
+    return res.json({
+      economy: view(out.state),
+      chipsDelta: out.chipsDelta,
+      xpDelta: out.xpDelta,
+      levelUp: out.levelAfter > out.levelBefore ? out.levelAfter : null,
+      unlocked: out.unlocked,
+      questsCompleted: out.questsCompleted,
+    });
+  }));
+
+  /** Klaim misi / pencapaian / bonus harian / bonus jam / roda / bantuan bangkrut. */
+  r.post('/economy/claim', wrap(async (req, res) => {
+    const id = needAuth(req, res);
+    if (!id) return;
+    if (!ecoLimiter.take(`claim:${ip(req)}`)) return res.status(429).json({ error: 'Terlalu banyak permintaan, tunggu sebentar' });
+    const { kind, id: targetId } = req.body ?? {};
+    const now = Date.now();
+
+    if (kind === 'spin') {
+      const out = await withEconomy(id, eco => {
+        const r2 = spinWheel(eco, cryptoRng(), now);
+        return { state: r2.ok ? r2.state : undefined, out: r2 };
+      });
+      if (!out.ok) return res.status(409).json({ error: out.reason === 'cooldown' ? 'Roda sudah diputar, tunggu lagi' : 'Tidak bisa memutar roda', nextInMs: out.nextInMs });
+      return res.json({ economy: view(out.state), reward: out.reward });
+    }
+
+    const runner: Record<string, (eco: EconomyState) => ClaimResult<{ chips: number; xp?: number }>> = {
+      quest: eco => claimQuest(eco, String(targetId)),
+      achievement: eco => claimAchievement(eco, String(targetId)),
+      daily: eco => claimDaily(eco, now),
+      hourly: eco => claimHourly(eco, now),
+      refill: eco => claimRefill(eco, now),
+    };
+    const run = runner[String(kind)];
+    if (!run) return res.status(400).json({ error: 'Jenis klaim tidak dikenal' });
+
+    const out = await withEconomy(id, eco => {
+      const r2 = run(eco);
+      return { state: r2.ok ? r2.state : undefined, out: r2 };
+    });
+    if (!out.ok) {
+      const msg: Record<string, string> = {
+        cooldown: 'Belum waktunya, coba lagi nanti',
+        not_complete: 'Misi belum selesai',
+        locked: 'Pencapaian belum terbuka',
+        claimed: 'Hadiah sudah diklaim',
+        quota: 'Kuota bantuan hari ini habis',
+        not_broke: 'Bantuan hanya untuk saldo di bawah 2.000 chip',
+        unknown: 'Hadiah tidak ditemukan',
+      };
+      return res.status(409).json({ error: msg[out.reason ?? 'unknown'], reason: out.reason, nextInMs: out.nextInMs });
+    }
+    return res.json({ economy: view(out.state), reward: out.reward });
+  }));
+
+  /**
+   * Pindahkan saldo tamu (perangkat) ke akun SEKALI. Ditolak bila ekonomi akun sudah dipakai,
+   * sehingga tidak bisa dipanggil berulang untuk mencetak chip.
+   */
+  r.post('/economy/migrate', wrap(async (req, res) => {
+    const id = needAuth(req, res);
+    if (!id) return;
+    const chips = Math.floor(Number(req.body?.chips));
+    if (!Number.isFinite(chips) || chips <= 0) return res.status(400).json({ error: 'Saldo tidak valid' });
+    const out = await withEconomy(id, eco => {
+      const pristine = eco.chips <= START_CHIPS && eco.xp === 0 && eco.lastDailyClaim === 0
+        && eco.lastHourlyClaim === 0 && eco.lastSpinTime === 0
+        && Object.values(eco.quests).every(q => q.current === 0 && !q.claimed)
+        && Object.values(eco.achievements).every(a => a.current === 0 && !a.claimed);
+      if (!pristine) return { out: { migrated: 0, state: eco } };
+      const add = Math.min(MAX_MIGRATE_CHIPS, chips) - eco.chips;
+      if (add <= 0) return { out: { migrated: 0, state: eco } };
+      const st = { ...eco, chips: eco.chips + add };
+      return { state: st, out: { migrated: add, state: st } };
+    });
+    return res.json({ economy: view(out.state), migrated: out.migrated });
+  }));
+
+  /** Kejadian meja (chat, ganti tema, all-in, natural 21) → progres pencapaian. */
+  r.post('/economy/event', wrap(async (req, res) => {
+    const id = needAuth(req, res);
+    if (!id) return;
+    if (!ecoLimiter.take(`event:${ip(req)}`)) return res.status(429).json({ error: 'Terlalu banyak permintaan' });
+    const type = String(req.body?.type ?? '');
+    if (!['chat', 'theme', 'allin', 'blackjack21'].includes(type)) return res.status(400).json({ error: 'Jenis kejadian tidak dikenal' });
+    const eco = await withEconomy(id, cur => {
+      const st = applyEvent(cur, type as 'chat' | 'theme' | 'allin' | 'blackjack21');
+      return { state: st, out: st };
+    });
+    return res.json({ economy: view(eco) });
   }));
 
   return r;

@@ -36,6 +36,7 @@ function applyAuth(body: AuthResponse, provider: 'password' | 'google') {
     d.onboarded = true;
   });
   refreshIdentity();
+  void import('./economy').then(async m => { await m.migrateGuestProgress(); await m.refreshEconomy(); });
 }
 
 export async function loginWithPassword(username: string, password: string) {
