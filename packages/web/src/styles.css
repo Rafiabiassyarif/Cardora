@@ -2551,8 +2551,8 @@ html[data-motion='reduced'] .chip-burst {
    Kartu domino diputar 90°: dua sisi kiri-kanan, jadi arah rantai kiri→kanan jelas.
    Ukuran sengaja TETAP (bukan --card-w) supaya titik tetap terbaca saat rantai panjang. */
 .pcard.tok-dom.tok-dom-land {
-  width: 64px;
-  height: 38px;
+  width: 74px;
+  height: 44px;
   flex: 0 0 auto;
   flex-direction: row;
   align-items: stretch;
@@ -2576,8 +2576,8 @@ html[data-motion='reduced'] .chip-burst {
   border-radius: 1px;
 }
 .pcard.tok-dom.tok-dom-land .pip {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
 }
 
 /* Rantai domino: strip mendatar dengan penanda ujung kiri/kanan */
@@ -2618,8 +2618,8 @@ html[data-motion='reduced'] .chip-burst {
 .gx-end i { font-style: normal; font-size: 0.7rem; opacity: 0.75; }
 
 @media (max-width: 560px) {
-  .pcard.tok-dom.tok-dom-land { width: 54px; height: 32px; padding: 3px; }
-  .pcard.tok-dom.tok-dom-land .pip { width: 6px; height: 6px; }
+  .pcard.tok-dom.tok-dom-land { width: 62px; height: 37px; padding: 3px; }
+  .pcard.tok-dom.tok-dom-land .pip { width: 7px; height: 7px; }
   .gx-end { font-size: 0.85rem; padding: 3px 7px; }
 }
 
