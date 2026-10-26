@@ -26,6 +26,8 @@ export interface RoomView {
   turnSeconds: number;
   /** seat index permainan berjalan → slot anggota (kosong saat lobby). */
   seatSlots: number[];
+  /** Seri ronde di room: rounds 0 = tanpa batas, intermission = jeda sebelum ronde berikutnya. */
+  series: { round: number; rounds: number; intermission: boolean };
 }
 
 export interface ChatMessage {
@@ -53,11 +55,12 @@ export interface ClientToServer {
   'room:join': (p: { code: string }, ack: Ack<{ room: RoomView }>) => void;
   'room:leave': (p: Record<string, never>, ack: Ack) => void;
   'room:ready': (p: { ready: boolean }, ack: Ack) => void;
-  'room:configure': (p: { gameId?: string; maxPlayers?: number; options?: Record<string, unknown> }, ack: Ack) => void;
+  'room:configure': (p: { gameId?: string; maxPlayers?: number; options?: Record<string, unknown>; seriesRounds?: number }, ack: Ack) => void;
   'room:addBot': (p: Record<string, never>, ack: Ack) => void;
   'room:removeBot': (p: { slot: number }, ack: Ack) => void;
   'room:start': (p: Record<string, never>, ack: Ack) => void;
   'room:rematch': (p: Record<string, never>, ack: Ack) => void;
+  'room:endSeries': (p: Record<string, never>, ack: Ack) => void;
   'game:action': (p: { action: unknown }, ack: Ack) => void;
   'room:chat': (p: { text: string }, ack: Ack) => void;
 }

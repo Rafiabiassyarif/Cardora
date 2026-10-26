@@ -54,11 +54,14 @@ export default function Online({ nav, join, create }: { nav: Nav; join?: string;
     const me = room.members.find(m => m.isYou);
     const avatars = seatAvatars(room);
     return (
-      <TableScreen gameId={room.gameId} view={view} error={error} subtitle={`Room ${room.code}`}
+      <TableScreen gameId={room.gameId} view={view} error={error}
+        subtitle={`Room ${room.code} · Ronde ${room.series?.round ?? 1}${(room.series?.rounds ?? 0) > 0 ? `/${room.series!.rounds}` : ' (tanpa batas)'}`}
         act={a => run(() => emit('game:action', { action: a }))}
         onExit={leave}
+        online={{ round: room.series?.round ?? 1, rounds: room.series?.rounds ?? 0, intermission: !!room.series?.intermission }}
+        onEndSeries={me?.isHost ? () => run(() => emit('room:endSeries')) : undefined}
         onRematch={me?.isHost ? () => run(() => emit('room:rematch')) : undefined}
-        rematchLabel="Rematch (kembali ke lobby)"
+        rematchLabel="Kembali ke Lobby"
         avatars={avatars} turnDeadline={room.turnDeadline} turnSeconds={room.turnSeconds} />
     );
   }
@@ -279,6 +282,27 @@ function Lobby({ room, run, busy }: { room: any; run: (f: () => Promise<unknown>
             onChange={(val: string) => run(() => emit('room:configure', { gameId: String(val) }))}
             ariaLabel="Pilih game"
           />
+        </div>
+        <div className="stack" style={{ gap: 6 }}>
+          <span className="small muted" style={{ fontWeight: 700 }}>Jumlah ronde seri</span>
+          <ChoiceGroup
+            disabled={!isHost || busy}
+            value={room.series?.rounds ?? 3}
+            options={[
+              { value: 1, label: '1 ronde', hint: 'Sekali main' },
+              { value: 3, label: '3 ronde' },
+              { value: 5, label: '5 ronde' },
+              { value: 7, label: '7 ronde' },
+              { value: 0, label: '∞ Tanpa batas', hint: 'Ronde baru langsung mulai saat selesai' },
+            ]}
+            onChange={(val: number) => run(() => emit('room:configure', { seriesRounds: Number(val) }))}
+            ariaLabel="Jumlah ronde seri"
+          />
+          <span className="small muted">
+            {(room.series?.rounds ?? 3) === 0
+              ? 'Tanpa batas: setiap ronde selesai, ronde baru langsung dimulai — tidak kembali ke lobby.'
+              : `Seri ${room.series?.rounds ?? 3} ronde: setelah ronde terakhir, hasil akhir ditampilkan.`}
+          </span>
         </div>
         <div className="stack" style={{ gap: 6 }}>
           <span className="small muted" style={{ fontWeight: 700 }}>Jumlah kursi</span>

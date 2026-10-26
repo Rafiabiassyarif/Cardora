@@ -60,14 +60,19 @@ export interface Room {
   status: 'lobby' | 'playing' | 'finished';
   game: ActiveGame | null;
   turnDeadline: number | null;
-  timers: { turn?: NodeJS.Timeout; auto?: NodeJS.Timeout; bot?: NodeJS.Timeout };
+  timers: { turn?: NodeJS.Timeout; auto?: NodeJS.Timeout; bot?: NodeJS.Timeout; next?: NodeJS.Timeout };
   lastActivity: number;
   createdAt: number;
+  /** Seri ronde: rounds 0 = tanpa batas (langsung mulai ronde baru saat selesai). */
+  series: { round: number; rounds: number; nextAt: number | null };
 }
 
 export interface ResultSink {
   (r: { gameId: string; code: string; results: SeatResult[]; players: { seat: number; userId: number | null; name: string; isBot: boolean }[] }): void;
 }
+
+const DEFAULT_SERIES_ROUNDS = 3;
+/** Jeda sebelum ronde berikutnya dimulai otomatis (ms). */
 
 const BOT_NAMES = ['Bot Budi', 'Bot Sari', 'Bot Joko', 'Bot Rina', 'Bot Dewi', 'Bot Agus', 'Bot Tono', 'Bot Lina'];
 
@@ -93,7 +98,7 @@ export class RoomManager {
 
   dispose() {
     clearInterval(this.sweeper);
-    for (const r of this.rooms.values()) this.clearTimers(r);
+    for (const r of this.rooms.values()) { this.clearTimers(r); clearTimeout(r.timers.next); }
   }
 
   /* ----------------------------- sessions ------------------------------ */
@@ -204,6 +209,7 @@ export class RoomManager {
       code: this.newCode(), hostId: playerId, gameId: mod.id, maxPlayers: max, options: { ...mod.defaultOptions },
       slots: Array(max).fill(null), status: 'lobby', game: null, turnDeadline: null, timers: {},
       lastActivity: Date.now(), createdAt: Date.now(),
+      series: { round: 0, rounds: DEFAULT_SERIES_ROUNDS, nextAt: null },
     };
     room.slots[0] = { playerId, name: s.name, avatar: s.avatar, ready: false, connected: true, isBot: false, disconnectedAt: null };
     this.rooms.set(room.code, room);
@@ -302,9 +308,15 @@ export class RoomManager {
     this.broadcast(room);
   }
 
-  configure(playerId: string, p: { gameId?: unknown; maxPlayers?: unknown; options?: unknown }) {
+  configure(playerId: string, p: { gameId?: unknown; maxPlayers?: unknown; options?: unknown; seriesRounds?: unknown }) {
     const room = this.hostRoom(playerId);
     if (room.status === 'playing') throw new UserError('Tidak bisa mengubah pengaturan saat bermain');
+    if (p.seriesRounds !== undefined) {
+      const n = Number(p.seriesRounds);
+      // 0 = tanpa batas; selain itu 1..20 ronde.
+      if (!Number.isFinite(n) || n < 0 || n > 20) throw new UserError('Jumlah ronde tidak valid');
+      room.series = { round: 0, rounds: Math.floor(n), nextAt: null };
+    }
     let mod = this.validGame(room.gameId);
     if (p.gameId !== undefined && p.gameId !== room.gameId) {
       mod = this.validGame(p.gameId);
@@ -364,6 +376,7 @@ export class RoomManager {
     const state = mod.setup(seated.map(x => ({ id: x.m.playerId ?? `bot${x.i}`, name: x.m.name, isBot: x.m.isBot })), options, this.rng);
     room.game = { module: mod, state, seatSlots: seated.map(x => x.i) };
     room.status = 'playing';
+    room.series = { round: 1, rounds: room.series.rounds, nextAt: null };
     log.info('game started', { code: room.code, game: mod.id, players: seated.length });
     this.notifyAll(room, 'info', 'Permainan dimulai!');
     this.touch(room);
@@ -373,6 +386,8 @@ export class RoomManager {
   rematch(playerId: string) {
     const room = this.hostRoom(playerId);
     if (room.status !== 'finished') throw new UserError('Permainan belum selesai');
+    clearTimeout(room.timers.next);
+    room.series = { round: 0, rounds: room.series.rounds, nextAt: null };
     room.status = 'lobby';
     room.game = null;
     for (const m of room.slots) if (m && !m.isBot) m.ready = m.playerId === room.hostId;
@@ -416,6 +431,48 @@ export class RoomManager {
 
   /* --------------------------- game driving ---------------------------- */
 
+  /** Ronde berikutnya dalam seri yang sama: kursi tetap, state baru, tanpa lewat lobby. */
+  private startNextRound(code: string) {
+    const room = this.rooms.get(code);
+    if (!room || room.status !== 'playing' || !room.game) return;
+    const mod = room.game.module;
+    const seatSlots = room.game.seatSlots.slice();
+    const members = seatSlots.map(i => room.slots[i]).filter((m): m is Member => !!m && !m.playerId?.startsWith('left:'));
+    if (members.length < Math.max(2, mod.minPlayers)) {
+      room.status = 'finished';
+      room.series.nextAt = null;
+      this.notifyAll(room, 'warn', 'Ronde berikutnya dibatalkan: pemain kurang.');
+      this.broadcast(room);
+      return;
+    }
+    const slots = seatSlots.filter(i => !!room.slots[i] && !room.slots[i]!.playerId?.startsWith('left:'));
+    const seated = slots.map(i => room.slots[i]!);
+    const options = mod.sanitizeOptions(room.options);
+    room.game = {
+      module: mod,
+      state: mod.setup(seated.map((m, k) => ({ id: m.playerId ?? `bot${slots[k]}`, name: m.name, isBot: m.isBot })), options, this.rng),
+      seatSlots: slots,
+    };
+    room.series = { round: room.series.round + 1, rounds: room.series.rounds, nextAt: null };
+    room.status = 'playing';
+    room.turnDeadline = null;
+    this.touch(room);
+    this.afterChange(room);
+  }
+
+  /** Host mengakhiri seri tanpa batas → kembali ke lobby (hasil ronde terakhir sudah dilaporkan). */
+  endSeries(playerId: string) {
+    const room = this.hostRoom(playerId);
+    clearTimeout(room.timers.next);
+    room.series = { round: 0, rounds: room.series.rounds, nextAt: null };
+    room.game = null;
+    room.status = 'lobby';
+    room.turnDeadline = null;
+    this.notifyAll(room, 'info', 'Seri diakhiri host. Kembali ke lobby.');
+    this.touch(room);
+    this.broadcast(room);
+  }
+
   private applyAction(room: Room, seat: number, action: unknown) {
     const g = room.game!;
     try {
@@ -432,10 +489,24 @@ export class RoomManager {
     const g = room.game!;
     this.clearTimers(room);
     if (g.module.isOver(g.state)) {
-      room.status = 'finished';
       room.turnDeadline = null;
-      this.broadcast(room);
       this.reportResults(room);
+      const rounds = room.series.rounds;
+      const seriesDone = rounds > 0 && room.series.round >= rounds;
+      if (seriesDone) {
+        room.status = 'finished';
+        room.series.nextAt = null;
+        this.notifyAll(room, 'info', `Seri selesai (${room.series.round} ronde). Host bisa memulai seri baru.`);
+        this.broadcast(room);
+        return;
+      }
+      // Lanjut ronde berikutnya otomatis (tanpa kembali ke lobby).
+      room.status = 'playing';
+      room.series.nextAt = Date.now() + this.cfg.intermissionMs;
+      this.notifyAll(room, 'info', `Ronde ${room.series.round} selesai — ronde ${room.series.round + 1}${rounds > 0 ? `/${rounds}` : ''} dimulai otomatis.`);
+      this.broadcast(room);
+      clearTimeout(room.timers.next);
+      room.timers.next = setTimeout(() => this.startNextRound(room.code), this.cfg.intermissionMs);
       return;
     }
     const rawDelay = g.module.autoDelay(g.state);
@@ -530,6 +601,7 @@ export class RoomManager {
       turnDeadline: room.turnDeadline,
       turnSeconds: this.cfg.turnSeconds,
       seatSlots: room.game?.seatSlots.slice() ?? [],
+      series: { round: room.series.round, rounds: room.series.rounds, intermission: room.series.nextAt !== null },
       members: room.slots.flatMap((m, slot) => (m ? [{
         slot, name: m.name, avatar: m.avatar, ready: m.ready || m.isBot, connected: m.connected,
         isHost: m.playerId === room.hostId, isBot: m.isBot, isYou: m.playerId === playerId,

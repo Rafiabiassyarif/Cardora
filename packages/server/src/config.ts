@@ -32,6 +32,8 @@ export const config = {
   webDist: process.env.WEB_DIST || '',
   logLevel: process.env.LOG_LEVEL || 'info',
   /** Jeda giliran bot (ms). Bila di test mode bernilai kecil agar tidak timeout. */
+  /** Jeda antar-ronde sebelum ronde berikutnya mulai otomatis (ms). */
+  intermissionMs: num(process.env.INTERMISSION_MS, 6000),
   botDelayMs: process.env.BOT_DELAY_MS !== undefined ? num(process.env.BOT_DELAY_MS, 30) : (process.env.NODE_ENV === 'test' ? 15 : null),
 };
 

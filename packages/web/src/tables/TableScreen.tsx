@@ -27,6 +27,9 @@ export interface TableProps {
   onRematch?: () => void;
   onNextRound?: () => void;
   series?: MatchSeries;
+  /** Seri ronde online dari server (rounds 0 = tanpa batas). */
+  online?: { round: number; rounds: number; intermission: boolean };
+  onEndSeries?: () => void;
   rematchLabel?: string;
   avatars?: string[];
   subtitle?: string;
@@ -167,6 +170,11 @@ export function TableScreen(p: TableProps) {
         </div>
 
         {/* Indikator Ronde Aktif & Klasemen */}
+        {!p.series && p.online && (
+          <span className="badge series-badge" title="Ronde seri di room ini">
+            🎯 Ronde {p.online.round}{p.online.rounds > 0 ? `/${p.online.rounds}` : ' · ∞'}
+          </span>
+        )}
         {p.series && (
           <button 
             className="badge series-badge" 
@@ -359,9 +367,26 @@ export function TableScreen(p: TableProps) {
             <p className="center" style={{ fontSize: '1.2rem', margin: '14px 0' }}>
               {v.results.find((r: any) => r.seat === v.you)?.rank === 1 ? '🏆 Kamu juara!' : 'Coba lagi, pasti bisa!'}
             </p>
+            {p.online?.intermission ? (
+              <div className="card-box stack center" style={{ padding: '12px 14px', marginBottom: 10 }}>
+                <b>Ronde {p.online.round} selesai</b>
+                <span className="small muted">
+                  Ronde {p.online.round + 1}{p.online.rounds > 0 ? `/${p.online.rounds}` : ''} mulai otomatis — tidak perlu kembali ke lobby.
+                </span>
+              </div>
+            ) : p.online && p.online.rounds > 0 && p.online.round >= p.online.rounds ? (
+              <div className="card-box stack center" style={{ padding: '12px 14px', marginBottom: 10 }}>
+                <b>🏁 Seri selesai ({p.online.rounds} ronde)</b>
+                <span className="small muted">Host bisa memulai seri baru atau kembali ke lobby.</span>
+              </div>
+            ) : null}
             <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
-              {p.onRematch && <button className="btn btn-gold grow" onClick={p.onRematch} style={{ minWidth: 130 }}>{p.rematchLabel ?? 'Main lagi'}</button>}
-              <button className="btn grow" onClick={p.onExit} style={{ minWidth: 100 }}>Kembali</button>
+              {p.online?.intermission
+                ? p.onEndSeries && <button className="btn grow" onClick={p.onEndSeries}>Akhiri Seri</button>
+                : <>
+                    {p.onRematch && <button className="btn btn-gold grow" onClick={p.onRematch} style={{ minWidth: 130 }}>{p.rematchLabel ?? 'Main lagi'}</button>}
+                    <button className="btn grow" onClick={p.onExit} style={{ minWidth: 100 }}>Keluar</button>
+                  </>}
             </div>
           </Modal>
         )

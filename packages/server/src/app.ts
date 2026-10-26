@@ -136,6 +136,7 @@ export function createApp(cfg: Config = defaultConfig): AppHandle {
     on('room:removeBot', (p) => rooms.removeBot(playerId!, p.slot));
     on('room:start', () => rooms.start(playerId!));
     on('room:rematch', () => rooms.rematch(playerId!));
+    on('room:endSeries', () => rooms.endSeries(playerId!));
     on('game:action', (p) => rooms.action(playerId!, p.action));
     on('room:chat', (p) => rooms.chat(playerId!, p.text));
 
