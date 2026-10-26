@@ -2625,6 +2625,8 @@ html[data-motion='reduced'] .chip-burst {
   opacity: 0.85;
 }
 .gx-snake-end { display: none; }
+/* Baris yang mengalir kanan→kiri: sisi kartu ikut dibalik agar angka sambungan tetap bersentuhan. */
+.gx-chain-row.back .pcard.tok-dom.tok-dom-land { flex-direction: row-reverse; }
 
 @media (max-width: 560px) {
   .gx-end { font-size: 0.85rem; padding: 3px 6px; }
