@@ -39,6 +39,70 @@ function Melds({ melds }: { melds?: Card[][] }) {
   );
 }
 
+/**
+ * Rantai domino digambar seperti ULAR: kartu mengalir ke samping lalu turun ke baris
+ * berikutnya dengan arah bergantian (kiri→kanan, kanan→kiri). Ukuran kartu menyesuaikan
+ * agar seluruh rantai muat tanpa perlu digeser.
+ */
+function DominoChain({ cards, ends }: { cards: (Card | null)[]; ends: { left: number; right: number } }) {
+  // Lebar acuan diambil dari viewport (bukan dari elemen rantai itu sendiri), karena
+  // rantai berada di dalam flex yang mengecil mengikuti isinya.
+  const measure = () => Math.min(Math.max(220, window.innerWidth - 84), 560);
+  const [avail, setAvail] = useState(measure);
+  useEffect(() => {
+    const onResize = () => setAvail(measure());
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  const n = cards.length;
+  const GAP = 4;
+  // Pilih ukuran kartu terbesar yang membuat rantai muat dalam maksimal 3 baris.
+  const layout = useMemo(() => {
+    // Sisihkan ruang untuk penanda ujung di baris pertama/terakhir.
+    const width = Math.max(120, (avail || 300) - 52);
+    const sizes = [70, 62, 56, 50, 44, 40, 36, 32];
+    for (const w of sizes) {
+      const perRow = Math.max(1, Math.floor((width + GAP) / (w + GAP)));
+      const rows = Math.ceil(n / Math.max(1, perRow));
+      if (rows <= 3) return { tileW: w, tileH: Math.round(w * 0.61), perRow, rows };
+    }
+    const w = 32;
+    const perRow = Math.max(1, Math.floor((width + GAP) / (w + GAP)));
+    return { tileW: w, tileH: Math.round(w * 0.61), perRow, rows: Math.ceil(n / perRow) };
+  }, [avail, n]);
+
+  const rows: (Card | null)[][] = [];
+  for (let i = 0; i < n; i += layout.perRow) rows.push(cards.slice(i, i + layout.perRow));
+
+  return (
+    <div className="gx-chain" style={{ ['--dom-w' as string]: `${layout.tileW}px`, ['--dom-h' as string]: `${layout.tileH}px` }}>
+      {rows.map((row, ri) => {
+        const snakeBack = ri % 2 === 1;            // baris ganjil mengalir kanan→kiri
+        const items = snakeBack ? [...row].reverse() : row;
+        const isFirst = ri === 0;
+        const isLast = ri === rows.length - 1;
+        return (
+          <div key={ri} className={`gx-chain-row${snakeBack ? ' back' : ''}`}>
+            {isFirst && (
+              <span className="gx-end left" title="Ujung kiri rantai"><i aria-hidden="true">◀</i> {ends.left}</span>
+            )}
+            {isLast && snakeBack && (
+              <span className="gx-end right" title="Ujung kanan rantai">{ends.right} <i aria-hidden="true">▶</i></span>
+            )}
+            {items.map((c, k) => <PlayingCard key={`${ri}-${k}-${c ?? 'x'}`} card={c} landscape />)}
+            {isFirst && !isLast && <span className="gx-snake-turn" aria-hidden="true">↴</span>}
+            {isLast && !snakeBack && (
+              <span className="gx-end right" title="Ujung kanan rantai">{ends.right} <i aria-hidden="true">▶</i></span>
+            )}
+            {isLast && snakeBack && <span className="gx-snake-end" aria-hidden="true">↩</span>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function Pile({ pile }: { pile: GPile }) {
   const count = pile.count ?? pile.cards.length;
   // Rantai domino digambar MENDATAR dengan penanda ujung, supaya arah rantai jelas.
@@ -49,19 +113,7 @@ function Pile({ pile }: { pile: GPile }) {
       {pile.cards.length === 0 ? (
         <div className="gx-empty">Kosong</div>
       ) : isChain ? (
-        <div className="gx-chain">
-          <span className="gx-end left" title="Ujung kiri rantai">
-            <i aria-hidden="true">◀</i> {pile.chain!.left}
-          </span>
-          <div className="gx-chain-track">
-            {pile.cards.map((c, k) => (
-              <PlayingCard key={`${k}-${c ?? 'x'}`} card={c} landscape />
-            ))}
-          </div>
-          <span className="gx-end right" title="Ujung kanan rantai">
-            {pile.chain!.right} <i aria-hidden="true">▶</i>
-          </span>
-        </div>
+        <DominoChain cards={pile.cards} ends={pile.chain!} />
       ) : pile.spread ? (
         <div className="gx-spread">
           {pile.cards.map((c, k) => <PlayingCard key={`${k}-${c ?? 'x'}`} small={pile.cards.length > 5} card={c} />)}

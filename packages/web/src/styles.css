@@ -2548,20 +2548,20 @@ html[data-motion='reduced'] .chip-burst {
 .tok-dom .dom-line { height: 2px; margin: 2px 6%; background: #B7AE9C; border-radius: 1px; }
 
 /* ---------- Domino mendatar (rantai di meja Gaple) ----------
-   Kartu domino diputar 90°: dua sisi kiri-kanan, jadi arah rantai kiri→kanan jelas.
-   Ukuran sengaja TETAP (bukan --card-w) supaya titik tetap terbaca saat rantai panjang. */
+   Kartu domino diputar 90°: dua sisi kiri-kanan. Ukuran diatur komponen (--dom-w/--dom-h)
+   agar seluruh rantai muat tanpa perlu digeser. */
 .pcard.tok-dom.tok-dom-land {
-  width: 76px;
-  height: 46px;
+  width: var(--dom-w, 66px);
+  height: var(--dom-h, 40px);
   flex: 0 0 auto;
   flex-direction: row;
   align-items: stretch;
   justify-content: space-between;
-  padding: 5px;
+  padding: calc(var(--dom-w, 66px) * 0.06);
   gap: 0;
-  border-radius: 8px;
+  border-radius: 7px;
   border: 1px solid #CFC0A8;
-  box-shadow: 0 2px 4px rgba(80, 60, 40, 0.16), inset 0 1px 0 #FFFFFF;
+  box-shadow: 0 1px 3px rgba(80, 60, 40, 0.16), inset 0 1px 0 #FFFFFF;
   background: linear-gradient(160deg, #FFFFFF, #F4EFE5);
 }
 .pcard.tok-dom.tok-dom-land .dom-half {
@@ -2572,57 +2572,63 @@ html[data-motion='reduced'] .chip-burst {
   place-items: center;
 }
 .pcard.tok-dom.tok-dom-land .dom-line {
-  width: 2px;
+  width: 1.5px;
   height: auto;
   margin: 8% 2%;
   background: #B7AE9C;
   border-radius: 1px;
 }
 .pcard.tok-dom.tok-dom-land .pip {
-  width: 8px;
-  height: 8px;
+  width: calc(var(--dom-w, 66px) * 0.105);
+  height: calc(var(--dom-w, 66px) * 0.105);
 }
 
-/* Rantai domino: strip mendatar dengan penanda ujung kiri/kanan */
-.gx-pile-chain { max-width: min(94vw, 560px); }
+/* Rantai domino "ular": baris mengalir ke samping, turun & berbalik arah,
+   sehingga seluruh rantai terlihat tanpa scroll horizontal. */
+.gx-pile-chain { width: 100%; max-width: min(94vw, 560px); }
 .gx-chain {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  max-width: 100%;
+  gap: 5px;
+  width: 100%;
+  box-sizing: border-box;
 }
-.gx-chain-track {
+.gx-chain-row {
   display: flex;
   align-items: center;
-  gap: 3px;
-  overflow-x: auto;
-  padding: 3px 0 5px;
-  scrollbar-width: thin;
-  -webkit-overflow-scrolling: touch;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+  max-width: 100%;
 }
-.gx-chain-track::-webkit-scrollbar { height: 4px; }
-.gx-chain-track::-webkit-scrollbar-thumb { background: var(--hair-2, #D8CCBB); border-radius: 2px; }
-.gx-chain-track > * { flex: 0 0 auto; }
 .gx-end {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: 1.05rem;
+  font-size: 1rem;
   color: var(--ink, #2C241B);
-  background: rgba(229, 178, 66, 0.22);
+  background: rgba(229, 178, 66, 0.24);
   border: 1px solid var(--gold, #E5B242);
-  border-radius: 10px;
-  padding: 5px 9px;
+  border-radius: 9px;
+  padding: 4px 7px;
   line-height: 1;
 }
-.gx-end i { font-style: normal; font-size: 0.7rem; opacity: 0.75; }
+.gx-end i { font-style: normal; font-size: 0.65rem; opacity: 0.75; }
+.gx-snake-turn {
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--gold-dark, #A9761F);
+  opacity: 0.85;
+}
+.gx-snake-end { display: none; }
 
 @media (max-width: 560px) {
-  .pcard.tok-dom.tok-dom-land { width: 66px; height: 40px; padding: 4px; }
-  .pcard.tok-dom.tok-dom-land .pip { width: 7px; height: 7px; }
-  .gx-end { font-size: 0.85rem; padding: 3px 7px; }
+  .gx-end { font-size: 0.85rem; padding: 3px 6px; }
+  .gx-chain { gap: 4px; }
+  .gx-chain-row { gap: 3px; }
 }
 
