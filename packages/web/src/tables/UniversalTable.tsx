@@ -1,12 +1,62 @@
-// tables/UniversalTable.tsx — UI meja serbaguna untuk seluruh varian game kartu di Cardora.
-import { useState, useEffect } from 'react';
+// tables/UniversalTable.tsx — meja serbaguna untuk semua game berprotokol GenericView.
+//
+// Meja ini tidak tahu aturan game apa pun: ia hanya menggambar view dari engine
+// (pemain, tumpukan di tengah, kartu tangan) dan menampilkan tombol untuk setiap aksi
+// sah di `v.actions`. Aksi yang butuh kartu memakai kartu yang dipilih di tangan;
+// aksi yang butuh angka menampilkan pengatur angka; aksi yang butuh lawan menampilkan pilihan pemain.
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { Card } from '@kuypoker/engine';
+import type { Card, GActionSpec, GenericView, GPile, GPlayer } from '@kuypoker/engine';
 import { PlayingCard } from '../components/ui';
 import { PlayerHand } from '../components/hand';
 import { SeatBadge, rotateSeats, Opponents } from './common';
 import { play } from '../lib/sound';
-import { IconPlay, IconPlus } from '../components/icons';
+
+function playerSub(p: GPlayer): string {
+  const text = [p.score, p.status].filter(Boolean).join(' · ');
+  // Game boleh sudah menyebut jumlah kartu/skor di status; hindari info dobel.
+  const parts = text ? text.split(' · ') : [];
+  if (!/kartu/.test(text)) parts.push(`${p.count} kartu`);
+  return [...new Set(parts)].join(' · ');
+}
+
+function SmallCards({ cards, max = 7 }: { cards: (Card | null)[]; max?: number }) {
+  if (!cards.length) return null;
+  const shown = cards.slice(-max);
+  return (
+    <div className="cards overlap">
+      {shown.map((c, k) => <PlayingCard key={`${k}-${c ?? 'x'}`} small card={c} />)}
+    </div>
+  );
+}
+
+function Melds({ melds }: { melds?: Card[][] }) {
+  if (!melds?.length) return null;
+  return (
+    <div className="gx-melds">
+      {melds.map((m, i) => <SmallCards key={i} cards={m} max={13} />)}
+    </div>
+  );
+}
+
+function Pile({ pile }: { pile: GPile }) {
+  const count = pile.count ?? pile.cards.length;
+  return (
+    <div className={`gx-pile${pile.highlight ? ' hl' : ''}`}>
+      <span className="gx-pile-label">{pile.label}{pile.count !== undefined ? ` · ${count}` : ''}</span>
+      {pile.cards.length === 0 ? (
+        <div className="gx-empty">Kosong</div>
+      ) : pile.spread ? (
+        <div className="gx-spread">
+          {pile.cards.map((c, k) => <PlayingCard key={`${k}-${c ?? 'x'}`} small={pile.cards.length > 5} card={c} />)}
+        </div>
+      ) : (
+        <PlayingCard card={pile.cards[pile.cards.length - 1]} />
+      )}
+      {pile.caption && <span className="gx-caption">{pile.caption}</span>}
+    </div>
+  );
+}
 
 export function UniversalTable({
   v,
@@ -15,154 +65,163 @@ export function UniversalTable({
   dock,
   bubble,
 }: {
-  v: any;
-  act: (a: any) => void;
+  v: GenericView;
+  act: (a: unknown) => void;
   avatars: string[];
   dock: HTMLElement | null;
   bubble?: { text: string; seat: number } | null;
 }) {
   const me = v.you ?? 0;
-  const isMyTurn = v.turn !== null && v.turn === me && !v.over;
-  const [selectedCards, setSelectedCards] = useState<Card[]>([]);
+  const meP = v.players[me];
+  const isMyTurn = v.turn !== null && v.turn === v.you && !v.over;
+  const [selected, setSelected] = useState<Card[]>([]);
+  const [amounts, setAmounts] = useState<Record<string, number>>({});
+  const [pickTarget, setPickTarget] = useState<GActionSpec | null>(null);
 
+  // Buang pilihan kartu yang sudah tidak ada di tangan.
   useEffect(() => {
-    setSelectedCards(prev => prev.filter(c => v.hand?.includes(c)));
+    setSelected(prev => {
+      const next = prev.filter(c => v.hand.includes(c));
+      return next.length === prev.length ? prev : next;
+    });
   }, [v.hand]);
 
-  const others = rotateSeats(v.names.length, me).slice(1);
+  // Tutup pemilih lawan bila aksinya sudah tidak tersedia.
+  useEffect(() => {
+    if (pickTarget && !v.actions.some(a => a.id === pickTarget.id)) setPickTarget(null);
+  }, [v.actions, pickTarget]);
 
-  const toggleSelectCard = (card: Card) => {
+  const cardActions = v.actions.filter(a => a.cards);
+  const canSelect = cardActions.length > 0;
+  const maxSelect = Math.max(0, ...cardActions.map(a => a.cards!.max));
+  const playable = useMemo(() => new Set(v.playable ?? []), [v.playable]);
+
+  const toggle = (c: Card) => {
+    if (!canSelect) return;
     play('card');
-    setSelectedCards(prev =>
-      prev.includes(card) ? prev.filter(c => c !== card) : [...prev, card]
-    );
+    setSelected(prev => {
+      if (prev.includes(c)) return prev.filter(x => x !== c);
+      if (maxSelect === 1) return [c];
+      return prev.length >= maxSelect ? prev : [...prev, c];
+    });
   };
 
-  const handlePlay = () => {
-    if (!isMyTurn || selectedCards.length === 0) return;
-    play('card');
-    act({ type: 'play', cards: selectedCards });
-    setSelectedCards([]);
+  const amountOf = (a: GActionSpec) => {
+    const s = a.amount!;
+    const raw = amounts[a.id] ?? s.default ?? s.min;
+    return Math.min(s.max, Math.max(s.min, raw));
   };
 
-  const handleDraw = () => {
-    if (!isMyTurn) return;
-    play('card');
-    act({ type: 'draw' });
-    setSelectedCards([]);
+  const send = (a: GActionSpec, target?: number) => {
+    const msg: Record<string, unknown> = { type: 'act', id: a.id };
+    if (a.cards) msg.cards = selected;
+    if (a.amount) msg.amount = amountOf(a);
+    if (target !== undefined) msg.target = target;
+    play(a.style === 'danger' ? 'click' : 'card');
+    act(msg);
+    setSelected([]);
+    setPickTarget(null);
   };
 
-  const handlePass = () => {
-    if (!isMyTurn) return;
-    play('click');
-    act({ type: 'pass' });
-    setSelectedCards([]);
+  const press = (a: GActionSpec) => {
+    if (a.targets && a.targets.length > 1) { setPickTarget(a); return; }
+    send(a, a.targets?.[0]);
   };
+
+  const enabled = (a: GActionSpec) => !a.cards || (selected.length >= a.cards.min && selected.length <= a.cards.max);
+
+  const others = rotateSeats(v.players.length, me).slice(1);
+  const amountActions = v.actions.filter(a => a.amount);
 
   return (
     <>
-      {/* Pemain Lawan di Sekeliling Meja */}
       <Opponents>
         {others.map(seat => {
-          const finished = v.finished ? v.finished.includes(seat) : false;
+          const p = v.players[seat];
+          const faceUp = p.faceUp ?? [];
           return (
             <SeatBadge
               key={seat}
               seat={seat}
-              name={v.names[seat]}
+              name={p.name}
               avatar={avatars[seat]}
               turn={v.turn === seat}
-              folded={finished}
-              sub={v.scores ? `${v.scores[seat]} pt` : `${v.handCounts[seat]} kartu`}
+              folded={p.out}
+              tag={p.tag}
+              sub={playerSub(p)}
               bubble={bubble && bubble.seat === seat ? bubble.text : undefined}
               extra={
-                !finished && (
-                  <div className="cards overlap">
-                    {Array.from({ length: Math.min(v.handCounts[seat] ?? 5, 5) }, (_, k) => (
-                      <PlayingCard key={k} small card={null} />
-                    ))}
-                  </div>
-                )
+                <>
+                  {faceUp.length > 0
+                    ? <SmallCards cards={faceUp} />
+                    : p.count > 0 && !p.out && <SmallCards cards={Array.from({ length: Math.min(p.count, 5) }, () => null)} />}
+                  <Melds melds={p.melds} />
+                </>
               }
             />
           );
         })}
       </Opponents>
 
-      {/* Area Tengah Meja: Tumpukan Kartu, Buangan, & Info Ronde */}
       <div className="center-area">
-        <div className="stack center" style={{ gap: 10, padding: '14px 22px', background: 'rgba(255,253,249,0.85)', borderRadius: 14, border: '1px solid var(--hair)' }}>
-          <div className="row small" style={{ justifyContent: 'space-between', width: '100%', gap: 12 }}>
-            <b style={{ color: 'var(--gold-light)' }}>
-              {v.round ? `🎯 Ronde ${v.round} / ${v.maxRounds ?? 3}` : '🃏 Meja Kartu'}
-            </b>
-            <span className="badge" style={{ fontSize: '0.75rem' }}>
-              Deck: {v.deckCount ?? 0} kartu
-            </span>
-          </div>
-
-          {/* Area Kartu di Meja */}
-          <div className="row" style={{ gap: 16, alignItems: 'center', justifyContent: 'center' }}>
-            {/* Tumpukan Ambil (Deck) */}
-            <div className="stack center" style={{ gap: 4 }}>
-              <span className="small muted" style={{ fontSize: '0.72rem' }}>Deck</span>
-              <PlayingCard card={null} />
+        <div className="gx-center">
+          {v.badges.length > 0 && (
+            <div className="gx-badges">
+              {v.badges.map((b, i) => <span key={i} className="badge">{b}</span>)}
             </div>
-
-            {/* Tumpukan Buang (Discard Pile) */}
-            <div className="stack center" style={{ gap: 4 }}>
-              <span className="small muted" style={{ fontSize: '0.72rem' }}>Terbuka</span>
-              {v.topDiscard ? (
-                <PlayingCard card={v.topDiscard} />
-              ) : (
-                <div style={{ width: 54, height: 78, border: '2px dashed var(--hair)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', fontSize: '0.75rem' }}>
-                  Kosong
-                </div>
-              )}
+          )}
+          {v.piles.length > 0 && (
+            <div className="gx-piles">
+              {v.piles.map(p => <Pile key={p.id} pile={p} />)}
             </div>
-          </div>
-
-          <span className="muted small center">
-            {isMyTurn ? 'Giliranmu! Pilih kartu di tanganmu untuk dimainkan atau ambil dari deck.' : `Menunggu giliran ${v.names[v.turn ?? 0]}…`}
-          </span>
+          )}
+          {v.banner && <div className="gx-banner">{v.banner}</div>}
+          <span className="muted small center">{v.prompt}</span>
         </div>
       </div>
 
-      {/* Area Pemain (Bawah Meja) */}
       <div className="me-area">
-        <SeatBadge
-          seat={me}
-          name={`${v.names[me]} (kamu)`}
-          avatar={avatars[me]}
-          turn={isMyTurn}
-          sub={v.scores ? `${v.scores[me]} pt · ${v.hand?.length ?? 0} kartu` : `${v.hand?.length ?? 0} kartu`}
-          bubble={bubble && bubble.seat === me ? bubble.text : undefined}
-        />
+        {meP && (
+          <SeatBadge
+            seat={me}
+            name={`${meP.name} (kamu)`}
+            avatar={avatars[me]}
+            turn={isMyTurn}
+            folded={meP.out}
+            tag={meP.tag}
+            sub={playerSub({ ...meP, count: v.hand.length || meP.count })}
+            bubble={bubble && bubble.seat === me ? bubble.text : undefined}
+            extra={
+              <>
+                {meP.faceUp && meP.faceUp.length > 0 && <SmallCards cards={meP.faceUp} />}
+                <Melds melds={meP.melds} />
+              </>
+            }
+          />
+        )}
 
-        {/* Hand Cards */}
-        <PlayerHand
-          cards={v.hand ?? []}
-          myTurn={isMyTurn}
-          state={c => ({
-            playable: isMyTurn,
-            selected: selectedCards.includes(c),
-            onClick: () => toggleSelectCard(c),
-          })}
-        />
+        {v.hand.length > 0 && (
+          <PlayerHand
+            cards={v.hand}
+            myTurn={isMyTurn && canSelect}
+            state={c => ({
+              playable: canSelect && (playable.size === 0 || playable.has(c)),
+              selected: selected.includes(c),
+              onClick: canSelect ? () => toggle(c) : undefined,
+            })}
+          />
+        )}
 
-        {/* Tombol Aksi di Dock */}
-        {dock && createPortal(
+        {dock && v.actions.length > 0 && createPortal(
           <>
-            {selectedCards.length > 0 && (
+            {selected.length > 0 && (
               <div className="hand-selection-bar">
-                <div className="hand-selection-pill is-valid">
-                  <span className="hand-selection-text">
-                    <b>{selectedCards.length} kartu dipilih</b>
-                  </span>
+                <div className={`hand-selection-pill ${cardActions.some(enabled) ? 'is-valid' : 'is-invalid'}`}>
+                  <span className="hand-selection-text"><b>{selected.length} kartu dipilih</b></span>
                   <button
                     type="button"
                     className="hand-selection-cancel"
-                    onClick={() => setSelectedCards([])}
+                    onClick={() => setSelected([])}
                     title="Batal pilih kartu"
                     aria-label="Batal pilih kartu"
                   >
@@ -171,39 +230,50 @@ export function UniversalTable({
                 </div>
               </div>
             )}
-            <div className="actions" style={{ justifyContent: 'center', gap: 10 }}>
-              {selectedCards.length > 0 && (
-                <button
-                  className="btn btn-gold btn-lg"
-                  onClick={handlePlay}
-                  style={{ boxShadow: '0 0 16px rgba(229, 178, 66, 0.4)' }}
-                >
-                  <IconPlay size={16} /> Mainkan ({selectedCards.length})
-                </button>
-              )}
+            {amountActions.map(a => {
+              const s = a.amount!;
+              const val = amountOf(a);
+              return (
+                <div key={`amt-${a.id}`} className="raise-row" aria-label={a.label}>
+                  {s.max > s.min && (
+                    <input type="range" min={s.min} max={s.max} step={s.step} value={val}
+                      aria-label={`${a.label} — jumlah`}
+                      onChange={e => setAmounts(m => ({ ...m, [a.id]: Number(e.target.value) }))} />
+                  )}
+                  <input className="input" style={{ width: 84 }} type="number" min={s.min} max={s.max} step={s.step} value={val}
+                    aria-label={`${a.label} — angka`}
+                    onChange={e => setAmounts(m => ({ ...m, [a.id]: Number(e.target.value) }))} />
+                </div>
+              );
+            })}
 
-              {v.legal?.canDraw !== false && (
-                <button
-                  className="btn btn-lg"
-                  disabled={!isMyTurn}
-                  onClick={handleDraw}
-                  title="Ambil 1 kartu dari deck"
-                >
-                  <IconPlus size={16} /> Ambil Kartu
-                </button>
-              )}
-
-              {v.legal?.canPass !== false && (
-                <button
-                  className="btn btn-lg"
-                  disabled={!isMyTurn}
-                  onClick={handlePass}
-                  title="Lewati giliran ini"
-                >
-                  Lewati
-                </button>
-              )}
-            </div>
+            {pickTarget ? (
+              <div className="actions">
+                <span className="muted small" style={{ width: '100%', textAlign: 'center' }}>{pickTarget.label}: pilih pemain</span>
+                {pickTarget.targets!.map(t => (
+                  <button key={t} className="btn btn-gold" onClick={() => send(pickTarget, t)}>{v.players[t]?.name ?? `Kursi ${t + 1}`}</button>
+                ))}
+                <button className="btn" onClick={() => setPickTarget(null)}>Batal</button>
+              </div>
+            ) : (
+              <div className="actions">
+                {v.actions.map(a => {
+                  const ok = enabled(a);
+                  const suffix = a.cards ? ` (${selected.length})` : a.amount ? ` ${amountOf(a)}` : '';
+                  return (
+                    <button
+                      key={a.id}
+                      className={`btn btn-lg${a.style === 'primary' ? ' btn-gold' : ''}${a.style === 'danger' ? ' btn-danger' : ''}`}
+                      disabled={!ok}
+                      title={a.hint ?? (a.cards && !ok ? (a.cards.min === a.cards.max ? `Pilih ${a.cards.min} kartu` : `Pilih ${a.cards.min}–${a.cards.max} kartu`) : undefined)}
+                      onClick={() => press(a)}
+                    >
+                      {a.label}{suffix}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </>,
           dock
         )}

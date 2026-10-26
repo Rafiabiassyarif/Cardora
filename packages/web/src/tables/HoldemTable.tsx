@@ -1,10 +1,11 @@
-// tables/HoldemTable.tsx — meja Texas Hold'em dengan Live Hand Strength Analyzer, Win Equity HUD, dan Pot Odds Helper.
+// tables/HoldemTable.tsx — meja Texas Hold'em (juga Omaha & Short Deck) dengan Live Hand Strength Analyzer, Win Equity HUD, dan Pot Odds Helper.
 import { useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react';
 import { 
   type HoldemView, 
   type HoldemAction, 
   type Card,
-  bestHand, 
+  evaluateVariant,
+  variantSpec,
   estimateEquity, 
   cryptoRng, 
   rankOf, 
@@ -28,8 +29,32 @@ const STREET: Record<string, string> = {
   gameOver: 'Selesai' 
 };
 
-function analyzePlayerHand(hole: Card[], board: Card[]) {
-  if (hole.length !== 2) return null;
+/** Analisis pre-flop Omaha (4 kartu): pair, suited/double-suited, rundown. */
+function analyzeOmahaPreflop(hole: Card[]) {
+  const ranks = hole.map(rankOf);
+  const label = (r: number) => hole[ranks.indexOf(r)].slice(0, -1);
+  const rc = new Map<number, number>();
+  for (const r of ranks) rc.set(r, (rc.get(r) ?? 0) + 1);
+  const pairs = [...rc].filter(([, c]) => c >= 2).map(([r]) => r).sort((a, b) => b - a);
+  const sc = new Map<string, number>();
+  for (const c of hole) sc.set(suitOf(c), (sc.get(suitOf(c)) ?? 0) + 1);
+  const suitedSuits = [...sc.values()].filter(c => c >= 2).length;
+  const uniq = [...rc.keys()].sort((a, b) => b - a);
+  const rundown = uniq.length === 4 && uniq[0] - uniq[3] <= 4;
+  const parts: string[] = [];
+  if (pairs.length) parts.push(pairs[0] === 14 ? 'Pocket Aces' : `Pair ${label(pairs[0])}`);
+  if (suitedSuits >= 2) parts.push('Double-Suited');
+  else if (suitedSuits === 1) parts.push('Suited');
+  if (rundown) parts.push('Rundown');
+  const high = (pairs[0] === 14) || (pairs.length > 0 && pairs[0] >= 10 && suitedSuits > 0) || (rundown && suitedSuits >= 2);
+  const tier = high ? 'high' : parts.length ? 'mid' : 'low';
+  return { name: parts.length ? parts.join(' · ') : `High Card ${label(Math.max(...ranks))}`, tier };
+}
+
+function analyzePlayerHand(hole: Card[], board: Card[], gameId: string) {
+  const spec = variantSpec(gameId);
+  if (hole.length !== spec.holeCards) return null;
+  if (board.length === 0 && spec.id === 'omaha') return analyzeOmahaPreflop(hole);
   if (board.length === 0) {
     const r1 = rankOf(hole[0]);
     const r2 = rankOf(hole[1]);
@@ -47,9 +72,9 @@ function analyzePlayerHand(hole: Card[], board: Card[]) {
     if (suited) return { name: `${label0}-${label1} Suited`, tier: 'mid' };
     return { name: `High Card ${label0}`, tier: 'low' };
   }
-  const total = [...hole, ...board];
-  if (total.length >= 5) {
-    const hand = bestHand(total);
+  if (board.length >= 3) {
+    // Omaha: wajib 2 kartu tangan + 3 kartu meja; Short Deck: urutan Triton.
+    const hand = evaluateVariant(spec.id, hole, board);
     return { 
       name: hand.name, 
       tier: hand.category >= 3 ? 'high' : hand.category >= 1 ? 'mid' : 'low' 
@@ -69,6 +94,10 @@ export function HoldemTable({ v, act, avatars, dock, bubble }: {
   const l = v.legal;
   const myBet = v.seats[me].bet;
   const myHole = v.seats[me].hole.filter((c): c is Card => !!c);
+  const spec = variantSpec(v.gameId);
+  const holeN = spec.holeCards;
+  // Omaha (4 kartu tangan): kartu dirapatkan agar muat di layar HP.
+  const holeCls = holeN > 2 ? ' hole4' : '';
   const minTo = l?.minBet ?? l?.minRaiseTo ?? 0;
   const [amount, setAmount] = useState(minTo);
   const [showRankings, setShowRankings] = useState(false);
@@ -82,7 +111,7 @@ export function HoldemTable({ v, act, avatars, dock, bubble }: {
   const presets = canSize ? [
     { label: 'Min', to: minTo },
     { label: '½ Pot', to: Math.round(v.currentBet + Math.max(v.bigBlind, (v.pot + (l!.callAmount)) / 2)) },
-    { label: 'Pot', to: Math.round(v.currentBet + Math.max(v.bigBlind, v.pot + l!.callAmount)) },
+    { label: spec.potLimit ? 'Pot (Maks)' : 'Pot', to: Math.round(v.currentBet + Math.max(v.bigBlind, v.pot + l!.callAmount)) },
   ].map(p => ({ ...p, to: Math.min(l!.maxTo, Math.max(minTo, p.to)) })) : [];
   
   const winners = new Set(v.lastHand?.winners.map(w => w.seat));
@@ -93,29 +122,30 @@ export function HoldemTable({ v, act, avatars, dock, bubble }: {
     if (!showdown || v.board.length < 5) return set;
     for (const w of v.lastHand!.winners) {
       const hole = v.seats[w.seat]?.hole.filter((c): c is Card => !!c) ?? [];
-      if (hole.length !== 2) continue;
-      try { for (const c of bestHand([...hole, ...v.board]).cards) set.add(c); } catch { /* abaikan */ }
+      if (hole.length !== holeN) continue;
+      try { for (const c of evaluateVariant(v.gameId, hole, v.board).cards) set.add(c); } catch { /* abaikan */ }
     }
     return set;
-  }, [showdown, v.board, v.lastHand, v.seats]);
+  }, [showdown, v.board, v.lastHand, v.seats, v.gameId, holeN]);
   const myWin = showdown ? v.lastHand!.winners.find(w => w.seat === me) : undefined;
   const others = rotateSeats(v.seats.length, me).slice(1);
 
   // Live Hand Analysis
-  const handAnalysis = useMemo(() => analyzePlayerHand(myHole, v.board), [myHole, v.board]);
+  const handAnalysis = useMemo(() => analyzePlayerHand(myHole, v.board, v.gameId), [myHole.join(), v.board, v.gameId]);
 
   // Live Win Equity Monte Carlo estimation
   const activeOpponents = v.seats.filter((s, idx) => idx !== me && !s.folded && !s.out).length;
   const equityPct = useMemo(() => {
-    if (myHole.length !== 2 || activeOpponents <= 0 || v.seats[me].folded || v.seats[me].out) return null;
+    if (myHole.length !== holeN || activeOpponents <= 0 || v.seats[me].folded || v.seats[me].out) return null;
     try {
       const rng = cryptoRng();
-      const eq = estimateEquity(myHole, v.board, activeOpponents, 100, rng);
+      // Omaha: evaluasi per tangan jauh lebih mahal → iterasi lebih sedikit agar UI tetap ringan.
+      const eq = estimateEquity(myHole, v.board, activeOpponents, spec.id === 'omaha' ? 40 : 100, rng, spec.id);
       return Math.max(1, Math.min(99, Math.round(eq * 100)));
     } catch {
       return null;
     }
-  }, [v.board.length, v.handNo, activeOpponents, myHole.length, v.seats[me].folded, v.seats[me].out]);
+  }, [v.board.length, v.handNo, activeOpponents, myHole.length, v.seats[me].folded, v.seats[me].out, spec.id, holeN]);
 
   // Pot odds calculation
   const potOdds = l && l.callAmount > 0 ? Math.round((l.callAmount / (v.pot + l.callAmount)) * 100) : null;
@@ -180,7 +210,7 @@ export function HoldemTable({ v, act, avatars, dock, bubble }: {
               bubble={bubble?.seat === i ? bubble.text : undefined}
               extra={<>
                 {!s.out && (
-                  <div className="cards overlap">
+                  <div className={`cards overlap${holeCls}`}>
                     {s.hole.map((c, k) => <PlayingCard key={`${v.handNo}-${k}-${c ?? 'x'}`} small card={c} win={winners.has(i) && !!c} combo={!!c && comboCards.has(c)} />)}
                   </div>
                 )}
@@ -273,7 +303,7 @@ export function HoldemTable({ v, act, avatars, dock, bubble }: {
           bubble={bubble?.seat === me ? bubble.text : undefined}
           extra={
             <div className="row" style={{ alignItems: 'center', gap: 8 }}>
-              <div className="cards">
+              <div className={`cards${holeCls}`}>
                 {v.seats[me].hole.map((c, k) => (
                   <PlayingCard key={`${v.handNo}-${k}`} card={c} win={winners.has(me)} combo={!!c && comboCards.has(c)} delay={k * 140} />
                 ))}
@@ -337,7 +367,8 @@ export function HoldemTable({ v, act, avatars, dock, bubble }: {
                       Call {l.callAmount.toLocaleString('id-ID')}
                     </button>
                   )}
-                  {canSize && amount < l.maxTo && (
+                  {/* Pot-Limit: bila all-in melebihi batas pot, raise ke batas (maxTo) tetap lewat tombol ini. */}
+                  {canSize && (amount < l.maxTo || !l.canAllIn) && (
                     <button 
                       className="btn btn-emerald" 
                       onClick={() => { play('chip'); act(isBet ? { type: 'bet', amount } : { type: 'raise', amount }); }}
@@ -358,7 +389,7 @@ export function HoldemTable({ v, act, avatars, dock, bubble }: {
         )}
       </div>
 
-      {showRankings && <HandRankingsModal onClose={() => setShowRankings(false)} />}
+      {showRankings && <HandRankingsModal variant={v.gameId} onClose={() => setShowRankings(false)} />}
       {showRebuy && <RebuyModal onClose={() => setShowRebuy(false)} currentStack={v.seats[me].stack} />}
       {showLastHand && (
         <LastHandModal 

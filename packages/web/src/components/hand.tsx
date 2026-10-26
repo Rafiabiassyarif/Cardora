@@ -31,8 +31,14 @@ function loadMode(): SortMode {
   return 'suit';
 }
 
+/** Kartu remi standar? (Kartu Warna "u:…" & domino "d:…" diurutkan dengan kunci sendiri.) */
+const isStd = (c: Card) => c.length === 2;
+/** Kunci urut kartu non-remi: Kartu Warna per warna lalu nilai; domino per jumlah titik. */
+const tokenKey = (c: Card) => (c[0] === 'd' ? Number(c[2]) + Number(c[3]) * 1.01 : '0123456789SRD4W'.indexOf(c[3]));
+const tokenGroup = (c: Card) => (c[0] === 'u' ? 'RYGBW'.indexOf(c[2]) : 0);
+
 /** Nilai default: As tinggi. Game dengan urutan khusus (mis. 2 tertinggi) memberi `rankValue` sendiri. */
-const defaultRank = (c: Card) => rankOf(c);
+const defaultRank = (c: Card) => (isStd(c) ? rankOf(c) : tokenKey(c));
 
 export function PlayerHand({
   cards,
@@ -54,6 +60,23 @@ export function PlayerHand({
   const drag = useRef<{ card: Card; x: number; y: number; moved: boolean; pointerId: number } | null>(null);
   const suppressClick = useRef(false);
   const rowRef = useRef<HTMLDivElement>(null);
+  const handRef = useRef<HTMLDivElement>(null);
+  // Lebar yang tersedia & lebar kartu — dipakai agar kipas selalu muat di layar (mis. 25+ kartu).
+  const [fit, setFit] = useState<{ avail: number; cardW: number }>({ avail: 0, cardW: 0 });
+  useEffect(() => {
+    const el = handRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const measure = () => {
+      const tb = el.querySelector<HTMLElement>('.hand-toolbar');
+      const card = rowRef.current?.querySelector<HTMLElement>('.pcard');
+      const next = { avail: el.clientWidth - (tb?.offsetWidth ?? 0) - 44, cardW: card?.offsetWidth ?? 0 };
+      setFit(prev => (prev.avail === next.avail && prev.cardW === next.cardW ? prev : next));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [cards.length > 0]);
 
   useEffect(() => {
     try { localStorage.setItem(SORT_KEY, mode); } catch { /* abaikan */ }
@@ -81,7 +104,7 @@ export function PlayerHand({
       const known = manual.filter(c => cards.includes(c));
       return [...known, ...cards.filter(c => !known.includes(c))];
     }
-    const bySuit = (c: Card) => SUIT_ORDER.indexOf(suitOf(c));
+    const bySuit = (c: Card) => (isStd(c) ? SUIT_ORDER.indexOf(suitOf(c)) : tokenGroup(c));
     return [...cards].sort((a, b) =>
       mode === 'rank'
         ? rankValue(a) - rankValue(b) || bySuit(a) - bySuit(b)
@@ -93,7 +116,10 @@ export function PlayerHand({
   const step = n <= 1 ? 0 : Math.min(3.8, 24 / (n - 1));
   const half = Math.max(1, (n - 1) / 2);
   const arc = 9 / (half * half); // ujung kipas turun maksimal ±9px agar tidak menyentuh tepi felt
-  const overlap = n >= 20 ? 0.68 : n >= 14 ? 0.62 : n >= 10 ? 0.58 : n >= 7 ? 0.44 : n >= 4 ? 0.32 : 0.12;
+  const baseOverlap = n >= 20 ? 0.68 : n >= 14 ? 0.62 : n >= 10 ? 0.58 : n >= 7 ? 0.44 : n >= 4 ? 0.32 : 0.12;
+  // Pastikan kipas selalu muat di lebar yang tersedia (mis. 25+ kartu di Bohong!).
+  const needed = n > 1 && fit.avail > 0 && fit.cardW > 0 ? 1 - (fit.avail - fit.cardW) / ((n - 1) * fit.cardW) : 0;
+  const overlap = Math.min(0.88, Math.max(baseOverlap, needed));
 
   const onPointerDown = (e: React.PointerEvent, card: Card) => {
     if (e.button !== 0) return;
@@ -151,7 +177,7 @@ export function PlayerHand({
   if (!cards.length) return null;
 
   return (
-    <div className="player-hand">
+    <div className="player-hand" ref={handRef}>
       <div className="hand-toolbar" role="toolbar" aria-label="Susun kartu">
         <button type="button" className={`chip${mode === 'rank' ? ' on' : ''}`} aria-pressed={mode === 'rank'} onClick={() => choose('rank')} title="Urutkan berdasarkan angka" aria-label="Urutkan berdasarkan angka">123</button>
         <button type="button" className={`chip${mode === 'suit' ? ' on' : ''}`} aria-pressed={mode === 'suit'} onClick={() => choose('suit')} title="Urutkan berdasarkan jenis" aria-label="Urutkan berdasarkan jenis">♠♥</button>

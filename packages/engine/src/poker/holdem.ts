@@ -1,19 +1,25 @@
 // poker/holdem.ts — Texas Hold'em No-Limit, mesin aturan authoritative.
+// Mesin yang sama juga menjalankan varian (lihat ./variant.ts):
+//  - Omaha (Pot-Limit, 4 kartu tangan, wajib 2 tangan + 3 board)
+//  - Short Deck Hold'em (No-Limit, deck 36 kartu, aturan Triton)
 //
 // Urutan: button → small blind → big blind → pre-flop → flop → turn → river →
 // showdown (atau menang karena semua lawan fold). Mendukung all-in, side pot,
 // split pot, pengembalian taruhan yang tidak di-call, heads-up (button = SB),
 // raise minimum, dan all-in "incomplete raise" yang tidak membuka ulang aksi.
 
-import { type Card, draw, shuffledDeck, cardLabel } from '../cards';
+import { type Card, draw, shuffle, cardLabel } from '../cards';
 import type { Rng } from '../rng';
 import {
   type BaseView, type Difficulty, type GameModule, type LogEntry, type OptionSpec,
   type SeatInfo, type SeatResult, RuleError, clampInt, clone, pushLog,
 } from '../types';
-import { bestHand, compareScores } from './evaluator';
+import { compareScores } from './evaluator';
 import { buildPots, splitPot } from './pots';
 import { estimateEquity } from './equity';
+import { type HoldemVariant, VARIANTS, evaluateVariant, variantDeck, variantSpec } from './variant';
+
+export type { HoldemVariant } from './variant';
 
 export type Street = 'preflop' | 'flop' | 'turn' | 'river' | 'handOver' | 'gameOver';
 
@@ -67,7 +73,7 @@ export interface HandSummary {
 }
 
 export interface HoldemState {
-  gameId: 'holdem';
+  gameId: HoldemVariant;
   options: HoldemOptions;
   seats: HoldemSeat[];
   handNo: number;
@@ -104,12 +110,15 @@ export interface HoldemLegal {
   callAmount: number;      // 0 jika tidak bisa call
   minBet: number | null;   // untuk bet (currentBet = 0)
   minRaiseTo: number | null;
-  maxTo: number;           // bet+stack (all-in)
+  /** Batas atas bet/raise-to: bet+stack (all-in); di Pot-Limit dibatasi besar pot. */
+  maxTo: number;
   canAllIn: boolean;
+  /** true jika varian memakai Pot-Limit (Omaha). */
+  potLimit?: boolean;
 }
 
 export interface HoldemView extends BaseView {
-  gameId: 'holdem';
+  gameId: HoldemVariant;
   seats: HoldemSeatView[];
   board: Card[];
   street: Street;
@@ -124,7 +133,7 @@ export interface HoldemView extends BaseView {
   lastHand: HandSummary | null;
 }
 
-const OPTIONS: OptionSpec[] = [
+const BASE_OPTIONS: OptionSpec[] = [
   {
     key: 'startingStack',
     label: 'Modal Chip Awal',
@@ -195,6 +204,23 @@ const OPTIONS: OptionSpec[] = [
   { key: 'maxHands', label: 'Batas Tangan (0 = sampai satu juara)', type: 'number', min: 0, max: 200, step: 5 },
 ];
 
+/** Opsi per varian: label/bantuan disesuaikan (Bahasa Indonesia). */
+function optionsFor(variant: HoldemVariant): OptionSpec[] {
+  if (variant === 'holdem') return BASE_OPTIONS;
+  return BASE_OPTIONS.map(o => {
+    if (o.key === 'bigBlind' && variant === 'omaha') {
+      return { ...o, help: 'Taruhan wajib; Small Blind setengah Big Blind. Pot-Limit: bet/raise maksimum sebesar pot' };
+    }
+    if (o.key === 'bigBlind' && variant === 'short-deck') {
+      return { ...o, help: 'Taruhan wajib; Small Blind setengah Big Blind. No-Limit dengan deck 36 kartu (6 sampai As)' };
+    }
+    if (o.key === 'showHandStrength' && variant === 'omaha') {
+      return { ...o, help: 'Tampilkan peluang menang & kombinasi terbaik (wajib 2 kartu tangan + 3 kartu meja)' };
+    }
+    return o;
+  });
+}
+
 const DEFAULTS: HoldemOptions = {
   startingStack: 1000,
   smallBlind: 10,
@@ -247,7 +273,7 @@ function startHand(s: HoldemState, rng: Rng, first: boolean) {
   }
   s.handNo += 1;
   s.board = [];
-  s.deck = shuffledDeck(rng);
+  s.deck = shuffle(variantDeck(s.gameId), rng);
   s.street = 'preflop';
   s.fullRaiseCount = 0;
   s.minRaise = s.options.bigBlind;
@@ -268,8 +294,9 @@ function startHand(s: HoldemState, rng: Rng, first: boolean) {
   log(s, s.sbSeat, `${sb.name} pasang small blind ${sbPaid}`);
   log(s, s.bbSeat, `${bb.name} pasang big blind ${bbPaid}`);
 
-  // Bagikan 2 kartu, satu per satu mulai kiri button.
-  for (let round = 0; round < 2; round++) {
+  // Bagikan kartu tangan (2, atau 4 untuk Omaha), satu per satu mulai kiri button.
+  const holeN = variantSpec(s.gameId).holeCards;
+  for (let round = 0; round < holeN; round++) {
     let i = s.button;
     for (let k = 0; k < active; k++) {
       i = nextSeat(s, i, x => !x.out);
@@ -335,7 +362,7 @@ function settleHand(s: HoldemState, showdown: boolean) {
   const contenders = s.seats.map((x, i) => i).filter(i => inHand(s.seats[i]));
 
   if (showdown && contenders.length > 1) {
-    const values = new Map(contenders.map(i => [i, bestHand([...s.seats[i].hole, ...s.board])]));
+    const values = new Map(contenders.map(i => [i, evaluateVariant(s.gameId, s.seats[i].hole, s.board)]));
     for (const i of contenders) { s.seats[i].shown = true; handName.set(i, values.get(i)!.name); }
     for (const pot of pots) {
       const elig = pot.eligible.filter(i => values.has(i));
@@ -376,10 +403,15 @@ export function legalFor(s: HoldemState, seat: number): HoldemLegal | null {
   if (s.toAct !== seat) return null;
   const x = s.seats[seat];
   const toCall = Math.max(0, s.currentBet - x.bet);
-  const maxTo = x.bet + x.stack;
+  const stackTo = x.bet + x.stack;
+  const potLimit = variantSpec(s.gameId).potLimit;
+  // Pot-Limit: raise maksimum = currentBet + (pot setelah call), di mana pot = semua
+  // kontribusi termasuk taruhan street ini. Bet (currentBet = 0) maksimum = pot.
+  const limitTo = potLimit ? s.currentBet + potTotal(s) + toCall : Infinity;
+  const maxTo = Math.min(stackTo, limitTo);
   const mayRaise = !x.acted || x.actedRaiseCount < s.fullRaiseCount;
   const othersCanAct = s.seats.some((o, i) => i !== seat && canAct(o));
-  const minBet = s.currentBet === 0 && othersCanAct && maxTo >= s.options.bigBlind ? Math.min(s.options.bigBlind, maxTo) : null;
+  const minBet = s.currentBet === 0 && othersCanAct && stackTo >= s.options.bigBlind ? Math.min(s.options.bigBlind, maxTo) : null;
   const minRaiseTo = s.currentBet > 0 && mayRaise && othersCanAct && maxTo > s.currentBet + s.minRaise - 1
     ? s.currentBet + s.minRaise : null;
   return {
@@ -389,183 +421,205 @@ export function legalFor(s: HoldemState, seat: number): HoldemLegal | null {
     minBet,
     minRaiseTo: minRaiseTo !== null && minRaiseTo <= maxTo ? minRaiseTo : null,
     maxTo,
-    // All-in diperbolehkan jika: tidak cukup untuk call penuh (all-in call), atau boleh raise.
-    canAllIn: x.stack > 0 && (x.stack <= toCall || (mayRaise && othersCanAct)),
+    // All-in diperbolehkan jika: tidak cukup untuk call penuh (all-in call), atau boleh raise
+    // (di Pot-Limit hanya jika seluruh stack masih dalam batas pot).
+    canAllIn: x.stack > 0 && (x.stack <= toCall || (mayRaise && othersCanAct && stackTo <= limitTo)),
+    ...(potLimit ? { potLimit: true } : {}),
   };
 }
 
 /* ------------------------------ module --------------------------------- */
 
-export const holdem: GameModule<HoldemState, HoldemAction, HoldemView, HoldemOptions> = {
-  id: 'holdem',
-  minPlayers: 2,
-  maxPlayers: 9,
-  defaultOptions: DEFAULTS,
-  options: OPTIONS,
+export type HoldemModule = GameModule<HoldemState, HoldemAction, HoldemView, HoldemOptions>;
 
-  sanitizeOptions(raw) {
-    const r = (raw ?? {}) as Partial<HoldemOptions>;
-    const bigBlind = clampInt(r.bigBlind, 2, 2000, DEFAULTS.bigBlind);
-    const bb = bigBlind % 2 === 0 ? bigBlind : bigBlind + 1;
-    const startingStack = clampInt(r.startingStack, Math.max(200, bb * 10), 100000, DEFAULTS.startingStack);
-    return {
-      startingStack,
-      bigBlind: bb,
-      smallBlind: bb / 2,
-      maxHands: clampInt(r.maxHands, 0, 500, 0),
-      blindStructure: r.blindStructure === 'turbo' || r.blindStructure === 'hyper' ? r.blindStructure : 'static',
-      turnSeconds: Number(r.turnSeconds) === 0 ? 0 : (typeof r.turnSeconds === 'number' ? clampInt(r.turnSeconds, 10, 60, 25) : 25),
-      showHandStrength: r.showHandStrength !== undefined ? Boolean(r.showHandStrength) : true,
-      autoMuck: r.autoMuck !== undefined ? Boolean(r.autoMuck) : true,
-      passAndPlay: Boolean(r.passAndPlay),
-    };
-  },
+function results(s: HoldemState): SeatResult[] | null {
+  if (s.street !== 'gameOver') return null;
+  const order = s.seats.map((x, i) => ({ seat: i, score: x.stack })).sort((a, b) => b.score - a.score);
+  let rank = 0, prev = -1;
+  return order.map((o, k) => {
+    if (o.score !== prev) { rank = k + 1; prev = o.score; }
+    return { seat: o.seat, rank, score: o.score } satisfies SeatResult;
+  });
+}
 
-  setup(seats: SeatInfo[], options, rng) {
-    if (seats.length < 2 || seats.length > 9) throw new RuleError('Texas Hold\'em butuh 2–9 pemain');
-    const s: HoldemState = {
-      gameId: 'holdem',
-      options,
-      seats: seats.map(p => ({
-        id: p.id, name: p.name, isBot: !!p.isBot, stack: options.startingStack, hole: [], bet: 0,
-        contributed: 0, folded: false, allIn: false, out: false, acted: false, actedRaiseCount: 0, shown: false,
-      })),
-      handNo: 0,
-      button: rng.int(seats.length), // dealer awal diundi
-      sbSeat: 0, bbSeat: 0,
-      street: 'preflop', deck: [], board: [], currentBet: 0, minRaise: options.bigBlind, fullRaiseCount: 0,
-      toAct: null, log: [], lastHand: null,
-    };
-    startHand(s, rng, true);
-    return s;
-  },
+/** Buat modul game untuk satu varian poker kartu komunitas. */
+export function createHoldemVariant(variant: HoldemVariant): HoldemModule {
+  const spec = VARIANTS[variant];
+  return {
+    id: variant,
+    minPlayers: 2,
+    maxPlayers: 9,
+    defaultOptions: DEFAULTS,
+    options: optionsFor(variant),
 
-  currentSeat: s => s.toAct,
+    sanitizeOptions(raw) {
+      const r = (raw ?? {}) as Partial<HoldemOptions>;
+      const bigBlind = clampInt(r.bigBlind, 2, 2000, DEFAULTS.bigBlind);
+      const bb = bigBlind % 2 === 0 ? bigBlind : bigBlind + 1;
+      const startingStack = clampInt(r.startingStack, Math.max(200, bb * 10), 100000, DEFAULTS.startingStack);
+      return {
+        startingStack,
+        bigBlind: bb,
+        smallBlind: bb / 2,
+        maxHands: clampInt(r.maxHands, 0, 500, 0),
+        blindStructure: r.blindStructure === 'turbo' || r.blindStructure === 'hyper' ? r.blindStructure : 'static',
+        turnSeconds: Number(r.turnSeconds) === 0 ? 0 : (typeof r.turnSeconds === 'number' ? clampInt(r.turnSeconds, 10, 60, 25) : 25),
+        showHandStrength: r.showHandStrength !== undefined ? Boolean(r.showHandStrength) : true,
+        autoMuck: r.autoMuck !== undefined ? Boolean(r.autoMuck) : true,
+        passAndPlay: Boolean(r.passAndPlay),
+      };
+    },
 
-  apply(state, seat, action, _rng) {
-    if (state.street === 'handOver' || state.street === 'gameOver') throw new RuleError('Tangan sudah selesai');
-    if (state.toAct !== seat) throw new RuleError('Bukan giliranmu');
-    const legal = legalFor(state, seat)!;
-    const s = clone(state);
-    const x = s.seats[seat];
-    const name = x.name;
-    const raiseTo = (to: number, label: string) => {
-      const increment = to - s.currentBet;
-      put(x, to - x.bet);
-      if (increment >= s.minRaise) {          // raise penuh → buka ulang aksi
-        s.minRaise = increment;
-        s.fullRaiseCount += 1;
+    setup(seats: SeatInfo[], options, rng) {
+      if (seats.length < 2 || seats.length > 9) throw new RuleError(`${spec.name} butuh 2–9 pemain`);
+      const s: HoldemState = {
+        gameId: variant,
+        options,
+        seats: seats.map(p => ({
+          id: p.id, name: p.name, isBot: !!p.isBot, stack: options.startingStack, hole: [], bet: 0,
+          contributed: 0, folded: false, allIn: false, out: false, acted: false, actedRaiseCount: 0, shown: false,
+        })),
+        handNo: 0,
+        button: rng.int(seats.length), // dealer awal diundi
+        sbSeat: 0, bbSeat: 0,
+        street: 'preflop', deck: [], board: [], currentBet: 0, minRaise: options.bigBlind, fullRaiseCount: 0,
+        toAct: null, log: [], lastHand: null,
+      };
+      startHand(s, rng, true);
+      return s;
+    },
+
+    currentSeat: s => s.toAct,
+
+    apply(state, seat, action, _rng) {
+      if (state.street === 'handOver' || state.street === 'gameOver') throw new RuleError('Tangan sudah selesai');
+      if (state.toAct !== seat) throw new RuleError('Bukan giliranmu');
+      const legal = legalFor(state, seat)!;
+      const s = clone(state);
+      const x = s.seats[seat];
+      const name = x.name;
+    const overMax = (amt: number) =>
+      legal.potLimit && amt <= x.bet + x.stack ? `Pot-Limit: maksimum ${legal.maxTo}` : 'Chip tidak cukup';
+      const raiseTo = (to: number, label: string) => {
+        const increment = to - s.currentBet;
+        put(x, to - x.bet);
+        if (increment >= s.minRaise) {          // raise penuh → buka ulang aksi
+          s.minRaise = increment;
+          s.fullRaiseCount += 1;
+        }
+        s.currentBet = Math.max(s.currentBet, x.bet);
+        log(s, seat, `${name} ${label} ${x.bet}${x.allIn ? ' (all-in)' : ''}`);
+      };
+
+      switch (action?.type) {
+        case 'fold':
+          x.folded = true;
+          log(s, seat, `${name} fold`);
+          break;
+        case 'check':
+          if (!legal.canCheck) throw new RuleError('Tidak bisa check — ada taruhan yang harus di-call');
+          log(s, seat, `${name} check`);
+          break;
+        case 'call': {
+          if (legal.callAmount <= 0) throw new RuleError('Tidak ada taruhan untuk di-call');
+          const paid = put(x, legal.callAmount);
+          log(s, seat, `${name} call ${paid}${x.allIn ? ' (all-in)' : ''}`);
+          break;
+        }
+        case 'bet': {
+          const amt = Math.floor(Number((action as { amount: number }).amount));
+          if (legal.minBet === null) throw new RuleError('Tidak bisa bet sekarang');
+          if (!Number.isFinite(amt) || amt < legal.minBet) throw new RuleError(`Bet minimum ${legal.minBet}`);
+          if (amt > legal.maxTo) throw new RuleError(overMax(amt));
+          raiseTo(amt, 'bet');
+          break;
+        }
+        case 'raise': {
+          const amt = Math.floor(Number((action as { amount: number }).amount));
+          if (legal.minRaiseTo === null) throw new RuleError('Tidak bisa raise sekarang');
+          if (!Number.isFinite(amt) || amt < legal.minRaiseTo) throw new RuleError(`Raise minimum ke ${legal.minRaiseTo}`);
+          if (amt > legal.maxTo) throw new RuleError(overMax(amt));
+          raiseTo(amt, 'raise ke');
+          break;
+        }
+        case 'allin': {
+          if (!legal.canAllIn) {
+          throw new RuleError(legal.potLimit && x.stack > legal.callAmount
+            ? `Pot-Limit: all-in melebihi batas pot (maksimum ${legal.maxTo})` : 'Tidak bisa all-in sekarang');
+        }
+          const to = x.bet + x.stack;
+          if (to > s.currentBet) raiseTo(to, s.currentBet === 0 ? 'bet' : 'raise ke');
+          else { put(x, x.stack); log(s, seat, `${name} call ${x.bet} (all-in)`); }
+          break;
+        }
+        default:
+          throw new RuleError('Aksi tidak dikenal');
       }
-      s.currentBet = Math.max(s.currentBet, x.bet);
-      log(s, seat, `${name} ${label} ${x.bet}${x.allIn ? ' (all-in)' : ''}`);
-    };
+      x.acted = true;
+      x.actedRaiseCount = s.fullRaiseCount;
+      progress(s, seat);
+      return s;
+    },
 
-    switch (action?.type) {
-      case 'fold':
-        x.folded = true;
-        log(s, seat, `${name} fold`);
-        break;
-      case 'check':
-        if (!legal.canCheck) throw new RuleError('Tidak bisa check — ada taruhan yang harus di-call');
-        log(s, seat, `${name} check`);
-        break;
-      case 'call': {
-        if (legal.callAmount <= 0) throw new RuleError('Tidak ada taruhan untuk di-call');
-        const paid = put(x, legal.callAmount);
-        log(s, seat, `${name} call ${paid}${x.allIn ? ' (all-in)' : ''}`);
-        break;
-      }
-      case 'bet': {
-        const amt = Math.floor(Number((action as { amount: number }).amount));
-        if (legal.minBet === null) throw new RuleError('Tidak bisa bet sekarang');
-        if (!Number.isFinite(amt) || amt < legal.minBet) throw new RuleError(`Bet minimum ${legal.minBet}`);
-        if (amt > legal.maxTo) throw new RuleError('Chip tidak cukup');
-        raiseTo(amt, 'bet');
-        break;
-      }
-      case 'raise': {
-        const amt = Math.floor(Number((action as { amount: number }).amount));
-        if (legal.minRaiseTo === null) throw new RuleError('Tidak bisa raise sekarang');
-        if (!Number.isFinite(amt) || amt < legal.minRaiseTo) throw new RuleError(`Raise minimum ke ${legal.minRaiseTo}`);
-        if (amt > legal.maxTo) throw new RuleError('Chip tidak cukup');
-        raiseTo(amt, 'raise ke');
-        break;
-      }
-      case 'allin': {
-        if (!legal.canAllIn) throw new RuleError('Tidak bisa all-in sekarang');
-        const to = x.bet + x.stack;
-        if (to > s.currentBet) raiseTo(to, s.currentBet === 0 ? 'bet' : 'raise ke');
-        else { put(x, x.stack); log(s, seat, `${name} call ${x.bet} (all-in)`); }
-        break;
-      }
-      default:
-        throw new RuleError('Aksi tidak dikenal');
-    }
-    x.acted = true;
-    x.actedRaiseCount = s.fullRaiseCount;
-    progress(s, seat);
-    return s;
-  },
+    autoDelay(s) {
+      if (s.street === 'gameOver') return null;
+      if (s.street === 'handOver') return 3500;
+      return s.toAct === null ? 900 : null;
+    },
 
-  autoDelay(s) {
-    if (s.street === 'gameOver') return null;
-    if (s.street === 'handOver') return 3500;
-    return s.toAct === null ? 900 : null;
-  },
+    advance(state, rng) {
+      const s = clone(state);
+      if (s.street === 'handOver') startHand(s, rng, false);
+      else if (s.street !== 'gameOver' && s.toAct === null) dealNextStreet(s);
+      return s;
+    },
 
-  advance(state, rng) {
-    const s = clone(state);
-    if (s.street === 'handOver') startHand(s, rng, false);
-    else if (s.street !== 'gameOver' && s.toAct === null) dealNextStreet(s);
-    return s;
-  },
+    timeoutAction(s, seat) {
+      const legal = legalFor(s, seat);
+      return legal?.canCheck ? { type: 'check' } : { type: 'fold' };
+    },
 
-  timeoutAction(s, seat) {
-    const legal = legalFor(s, seat);
-    return legal?.canCheck ? { type: 'check' } : { type: 'fold' };
-  },
+    view(s, seat) {
+      const reveal = (i: number) => i === seat || s.seats[i].shown;
+      return {
+        gameId: s.gameId,
+        you: seat,
+        turn: s.toAct,
+        over: s.street === 'gameOver',
+        log: s.log.slice(-30),
+        results: results(s),
+        seats: s.seats.map((x, i) => ({
+          name: x.name, isBot: x.isBot, stack: x.stack, bet: x.bet, folded: x.folded, allIn: x.allIn, out: x.out,
+          hole: x.hole.map(c => (reveal(i) ? c : null)),
+        })),
+        board: s.board.slice(),
+        street: s.street,
+        pot: potTotal(s),
+        currentBet: s.currentBet,
+        button: s.button, sbSeat: s.sbSeat, bbSeat: s.bbSeat,
+        bigBlind: s.options.bigBlind,
+        handNo: s.handNo,
+        legal: seat === null ? null : legalFor(s, seat),
+        lastHand: s.street === 'handOver' || s.street === 'gameOver' ? s.lastHand : null,
+      };
+    },
 
-  view(s, seat) {
-    const reveal = (i: number) => i === seat || s.seats[i].shown;
-    return {
-      gameId: 'holdem',
-      you: seat,
-      turn: s.toAct,
-      over: s.street === 'gameOver',
-      log: s.log.slice(-30),
-      results: holdem.results(s),
-      seats: s.seats.map((x, i) => ({
-        name: x.name, isBot: x.isBot, stack: x.stack, bet: x.bet, folded: x.folded, allIn: x.allIn, out: x.out,
-        hole: x.hole.map(c => (reveal(i) ? c : null)),
-      })),
-      board: s.board.slice(),
-      street: s.street,
-      pot: potTotal(s),
-      currentBet: s.currentBet,
-      button: s.button, sbSeat: s.sbSeat, bbSeat: s.bbSeat,
-      bigBlind: s.options.bigBlind,
-      handNo: s.handNo,
-      legal: seat === null ? null : legalFor(s, seat),
-      lastHand: s.street === 'handOver' || s.street === 'gameOver' ? s.lastHand : null,
-    };
-  },
+    bot(v, difficulty, rng) {
+      return holdemBot(v, difficulty, rng);
+    },
 
-  bot(v, difficulty, rng) {
-    return holdemBot(v, difficulty, rng);
-  },
+    isOver: s => s.street === 'gameOver',
 
-  isOver: s => s.street === 'gameOver',
+    results,
+  };
+}
 
-  results(s) {
-    if (s.street !== 'gameOver') return null;
-    const order = s.seats.map((x, i) => ({ seat: i, score: x.stack })).sort((a, b) => b.score - a.score);
-    let rank = 0, prev = -1;
-    return order.map((o, k) => {
-      if (o.score !== prev) { rank = k + 1; prev = o.score; }
-      return { seat: o.seat, rank, score: o.score } satisfies SeatResult;
-    });
-  },
-};
+/** Texas Hold'em No-Limit. */
+export const holdem: HoldemModule = createHoldemVariant('holdem');
+/** Omaha Pot-Limit (4 kartu tangan, wajib 2 tangan + 3 board). */
+export const omaha: HoldemModule = createHoldemVariant('omaha');
+/** Short Deck (6+) Hold'em No-Limit, deck 36 kartu, aturan Triton. */
+export const shortDeck: HoldemModule = createHoldemVariant('short-deck');
 
 /* --------------------------------- bot --------------------------------- */
 // Hanya memakai informasi sah: kartu sendiri, board, pot, taruhan. Tidak melihat kartu lawan.
@@ -576,8 +630,11 @@ export function holdemBot(v: HoldemView, difficulty: Difficulty, rng: Rng): Hold
   if (!legal) return { type: 'fold' };
   const hole = v.seats[me].hole.filter((c): c is Card => !!c);
   const opponents = v.seats.filter((x, i) => i !== me && !x.folded && !x.out).length;
-  const iters = difficulty === 'hard' ? 400 : difficulty === 'normal' ? 160 : 60;
-  let equity = estimateEquity(hole, v.board, Math.max(1, opponents), iters, rng);
+  const variant = variantSpec(v.gameId).id;
+  // Omaha: evaluasi per tangan ~60× lebih mahal → iterasi lebih sedikit.
+  const baseIters = difficulty === 'hard' ? 400 : difficulty === 'normal' ? 160 : 60;
+  const iters = variant === 'omaha' ? Math.max(24, Math.round(baseIters / 5)) : baseIters;
+  let equity = estimateEquity(hole, v.board, Math.max(1, opponents), iters, rng, variant);
   if (difficulty === 'easy') equity = Math.min(1, Math.max(0, equity + (rng.float() - 0.5) * 0.3));
 
   const pot = v.pot;

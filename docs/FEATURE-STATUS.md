@@ -12,9 +12,15 @@ Legenda: [x] selesai & diuji · [~] ada, terbatas · [ ] belum
 - [x] Bot 3 tingkat (mudah/normal/sulit) untuk semua game + interaksi banter chat lokal
 - [x] RNG kriptografis (crypto.getRandomValues) untuk kocok kartu
 - [x] Rebuy & Top-up chip instan langsung di meja saat saldo chip habis
-- [x] Capsa Banting: memakai mesin Poker Tongkrongan
-- [~] 22 game lain (Omaha, Short Deck, Five Card Draw, Seven Card Stud, Baccarat, Casino War, 41, Samhong, Remi, Capsa Susun, Tepok Nyamuk, Go Fish, Old Maid, Crazy Eights, Mau-Mau, Gin Rummy, Rummy, Hearts, Spades, Euchre, Durak, President) — bisa dimainkan (UI, server, bot) dengan aturan umum yang disederhanakan di `allGames.ts`; aturan khas tiap game & opsi seperti modal chip/big blind belum berpengaruh
-- [x] Validasi aksi game umum: kartu yang dimainkan wajib ada di tangan & tidak duplikat (mencegah klien curang menambah poin)
+- [x] Game pesta (ramai-ramai): Domino Gaple (balak 6, pilih ujung, Gaple/buntu), Kartu Warna (2–8 pemain, Lewati/Balik/+2/Wild +4, "Satu Kartu!"), Bohong! (3–8 pemain, tuduh real-time)
+- [x] Token non-remi (`tokens.ts`): domino & Kartu Warna digambar oleh meja universal; kipas kartu tangan otomatis muat di layar (30+ kartu)
+- [x] Omaha (Pot-Limit, wajib 2 kartu tangan) & Short Deck (36 kartu, Flush > Full House, Trips > Straight) di mesin Hold'em
+- [x] Five Card Draw (ante, NL/PL, tukar 0–3/4 dengan As) & Seven Card Stud (bring-in, fixed-limit, kartu terbuka)
+- [x] Kartu Indonesia: Kartu 41 (ketuk), Remi (tutup otomatis), Samhong (tahan/tukar), Capsa Susun (3 baris, susun otomatis), Tepok Nyamuk (tepok real-time)
+- [x] Internasional: Baccarat (tabel kartu ke-3 resmi), Casino War (perang/menyerah), Crazy Eights, Mau-Mau, Go Fish, Old Maid, Gin Rummy (knock/gin/undercut), Classic Rummy, Hearts (oper kartu, shoot the moon), Spades (bid, nil, bag), Euchre (bower), Durak, President (tukar kartu antar-deal)
+- [x] Meja universal (`GenericView` + `UniversalTable`): engine menentukan tumpukan, kartu terbuka, meld, dan tombol aksi (pilih kartu / angka / lawan)
+- [x] Setiap game: validasi aksi di server, bot 3 tingkat, tes aturan + fuzz (bot + aksi acak, konservasi kartu/chip, anti bocor kartu)
+- [~] Penyederhanaan yang disengaja: tanpa "go alone" (Euchre), blind nil (Spades), kartu spesial President, Dragon (Capsa Susun); Durak hanya penyerang utama yang boleh menambah kartu
 
 ## Multiplayer online & Komunikasi
 - [x] Room dengan kode 6 karakter (tanpa karakter ambigu), salin & bagikan

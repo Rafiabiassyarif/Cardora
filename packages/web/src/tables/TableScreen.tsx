@@ -72,7 +72,7 @@ export function TableScreen(p: TableProps) {
   // Confetti saat kamu juara 1 di akhir ronde/permainan.
   const iWon = !!(v?.over && Array.isArray(v.results) && v.results.some((r: { seat: number; rank: number }) => r.seat === v.you && r.rank === 1));
   useEffect(() => { if (iWon) setConfettiKey(Date.now()); }, [iWon]);
-  const names: string[] = v ? (v.names ?? v.seats?.map((s: any) => s.name) ?? []) : [];
+  const names: string[] = v ? (v.names ?? v.seats?.map((s: any) => s.name) ?? v.players?.map((s: any) => s.name) ?? []) : [];
   const avatars = p.avatars ?? names.map((_, i) => (i === 0 ? '🙂' : AVATARS[(i + 3) % AVATARS.length]));
   const myTurn = v && v.turn !== null && v.turn === v.you;
 
@@ -220,11 +220,11 @@ export function TableScreen(p: TableProps) {
         {turnFlash && <div key={turnFlash} className="turn-flash" aria-hidden="true"><span>Giliranmu</span></div>}
         {!v ? <div className="center-area muted">Menyiapkan meja…</div> : (
           <Suspense fallback={<div className="center-area muted">Memuat…</div>}>
-            {v.gameId === 'holdem' && <HoldemTable v={v} act={p.act} avatars={avatars} dock={dock} bubble={bubble} />}
+            {(v.gameId === 'holdem' || v.gameId === 'omaha' || v.gameId === 'short-deck') && <HoldemTable v={v} act={p.act} avatars={avatars} dock={dock} bubble={bubble} />}
             {v.gameId === 'cangkulan' && <CangkulanTable v={v} act={p.act} avatars={avatars} dock={dock} bubble={bubble} />}
             {v.gameId === 'blackjack' && <BlackjackTable v={v} act={p.act} avatars={avatars} dock={dock} bubble={bubble} />}
-            {(v.gameId === 'tongkrongan' || v.gameId === 'capsa-banting') && <TongkronganTable v={v} act={p.act} avatars={avatars} dock={dock} bubble={bubble} />}
-            {!['holdem', 'cangkulan', 'blackjack', 'tongkrongan', 'capsa-banting'].includes(v.gameId) && (
+            {v.gameId === 'tongkrongan' && <TongkronganTable v={v} act={p.act} avatars={avatars} dock={dock} bubble={bubble} />}
+            {!['holdem', 'omaha', 'short-deck', 'cangkulan', 'blackjack', 'tongkrongan'].includes(v.gameId) && (
               <UniversalTable v={v} act={p.act} avatars={avatars} dock={dock} bubble={bubble} />
             )}
           </Suspense>

@@ -660,23 +660,35 @@ const POKER_HANDS = [
   { rank: 10, name: 'High Card', desc: 'Tidak ada kombinasi yang terbentuk, ditentukan kartu tertinggi.', odds: 'Paling sering', cards: '🂡 🂮 🂹 🂷 🂲' },
 ];
 
-export function HandRankingsModal({ onClose }: { onClose: () => void }) {
+/** Short Deck (aturan Triton): Flush > Full House, Three of a Kind > Straight, straight terendah A-6-7-8-9. */
+const SHORT_DECK_ORDER = ['Royal Flush', 'Straight Flush', 'Four of a Kind', 'Flush', 'Full House', 'Three of a Kind', 'Straight', 'Two Pair', 'One Pair', 'High Card'];
+const SHORT_DECK_HANDS = SHORT_DECK_ORDER.map((name, i) => {
+  const h = POKER_HANDS.find(x => x.name === name)!;
+  const desc = name === 'Straight' ? '5 kartu berurutan beda bunga; As bisa rendah: A-6-7-8-9 (straight terendah).' : h.desc;
+  return { ...h, rank: i + 1, desc, odds: '' };
+});
+
+export function HandRankingsModal({ onClose, variant = 'holdem' }: { onClose: () => void; variant?: string }) {
+  const title = variant === 'omaha' ? 'Omaha' : variant === 'short-deck' ? 'Short Deck' : "Texas Hold'em";
+  const hands = variant === 'short-deck' ? SHORT_DECK_HANDS : POKER_HANDS;
   return (
-    <Modal title="🃏 Urutan Kombinasi Kartu Texas Hold'em" onClose={onClose}>
+    <Modal title={`🃏 Urutan Kombinasi Kartu ${title}`} onClose={onClose}>
       <div className="stack" style={{ maxHeight: '72vh', overflowY: 'auto', paddingRight: 4 }}>
         <p className="muted small" style={{ margin: '0 0 10px' }}>
           Urutan dari terkuat (Royal Flush) hingga terlemah (High Card). Evaluator Cardora memilih otomatis 5 kartu terbaik Anda.
+          {variant === 'omaha' && ' Di Omaha, kombinasi WAJIB memakai tepat 2 dari 4 kartu tangan + tepat 3 kartu meja.'}
+          {variant === 'short-deck' && ' Short Deck (deck 36 kartu): Flush mengalahkan Full House dan Three of a Kind mengalahkan Straight.'}
         </p>
 
         <div className="stack" style={{ gap: 8 }}>
-          {POKER_HANDS.map(h => (
+          {hands.map(h => (
             <div key={h.rank} className="card-box" style={{ padding: '10px 14px' }}>
               <div className="row" style={{ justifyContent: 'space-between' }}>
                 <span className="font-display" style={{ fontWeight: 800 }}>
                   <span className="badge" style={{ marginRight: 8, background: h.rank <= 3 ? 'var(--gold)' : undefined, color: h.rank <= 3 ? '#000' : undefined }}>#{h.rank}</span>
                   {h.name}
                 </span>
-                <span className="small muted">{h.odds}</span>
+                {h.odds && <span className="small muted">{h.odds}</span>}
               </div>
               <p className="small muted" style={{ margin: '4px 0 6px' }}>{h.desc}</p>
               <div style={{ fontSize: '1.4rem', letterSpacing: 3 }}>{h.cards}</div>

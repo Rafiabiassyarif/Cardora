@@ -79,11 +79,10 @@ describe('room code & lobby', () => {
     await a.call('room:leave');
   });
 
-  it('kode tidak valid / tidak ada / game segera hadir ditolak dengan pesan jelas', async () => {
+  it('kode tidak valid / tidak ada / game tidak dikenal ditolak dengan pesan jelas', async () => {
     const a = await client('Budi');
     expect((await a.callRaw('room:join', { code: '12' })).error).toMatch(/6 karakter/);
     expect((await a.callRaw('room:join', { code: 'ZZZZZZ' })).error).toMatch(/tidak ditemukan/);
-    expect((await a.callRaw('room:create', { gameId: 'domino-gaple', maxPlayers: 4 })).error).toMatch(/segera hadir/);
     expect((await a.callRaw('room:create', { gameId: 'xyz', maxPlayers: 4 })).error).toMatch(/tidak dikenal/);
   });
 

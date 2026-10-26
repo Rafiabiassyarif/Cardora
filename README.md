@@ -3,20 +3,18 @@
 Platform game kartu multiplayer — web (PWA), Android, dan iOS dari satu kode.
 Main sendiri melawan bot (offline) atau online bersama teman lewat kode room.
 
-Semua 27 game di katalog bisa dimainkan.
+Semua 29 game di katalog bisa dimainkan — masing-masing dengan mesin aturan, bot (3 tingkat), dan tes sendiri:
 
-Dengan aturan lengkap sesuai game aslinya:
-- Texas Hold'em (2–9 pemain, no-limit, side pot, showdown, equity HUD)
-- Cangkulan (2–6 pemain, permainan kartu Indonesia)
-- Blackjack (1–4 pemain vs bandar)
-- Poker Tongkrongan (4 pemain, shedding 13 kartu, Pass & Play / vs bot)
-- Capsa Banting (memakai mesin Poker Tongkrongan)
+- Poker: Texas Hold'em, Omaha (Pot-Limit), Short Deck, Five Card Draw, Seven Card Stud
+- Kartu Indonesia: Cangkulan, Poker Tongkrongan, Capsa Susun, Kartu 41, Remi, Samhong, Tepok Nyamuk, Domino Gaple, Bohong!
+- Internasional: Kartu Warna, Blackjack, Baccarat, Casino War, Crazy Eights, Mau-Mau, Go Fish, Old Maid, Gin Rummy,
+  Classic Rummy, Hearts, Spades, Euchre, Durak, President
 
-Dengan aturan umum yang disederhanakan (`packages/engine/src/allGames.ts`):
-Omaha, Short Deck, Five Card Draw, Seven Card Stud, Baccarat, Casino War, 41, Samhong,
-Remi, Capsa Susun, Tepok Nyamuk, Go Fish, Old Maid, Crazy Eights, Mau-Mau, Gin Rummy,
-Rummy, Hearts, Spades, Euchre, Durak, President. Pemain bergantian main/ambil/lewat,
-skor dari nilai kartu; aturan khas tiap game belum diterapkan.
+Hold'em/Omaha/Short Deck, Cangkulan, Blackjack, dan Tongkrongan punya meja khusus.
+Game lain memakai **meja universal**: engine menjelaskan isi meja & aksi yang sah lewat `GenericView`
+(`packages/engine/src/generic.ts`), lalu `UniversalTable` merendernya. Menambah game baru = tulis engine
+di `packages/engine/src/games/`, daftarkan di `index.ts` + `catalog.ts` — tanpa menyentuh UI.
+Selain kartu remi, meja universal juga bisa menampilkan domino (`d:…`) dan Kartu Warna (`u:…`) — lihat `tokens.ts`.
 
 ## Struktur
 
@@ -48,7 +46,7 @@ Tanpa database semua pemain bermain sebagai tamu.
 
 ## Tes
 
-    npm test               # 135 tes: evaluator poker, fuzz Hold'em (konservasi chip), semua game, multiplayer socket nyata
+    npm test               # 760 tes: evaluator poker, fuzz tiap game (bot + aksi acak, konservasi kartu/chip), multiplayer socket nyata
     npm run typecheck
 
 Uji layout lintas perangkat (dev): jalankan `npm run dev`, buka

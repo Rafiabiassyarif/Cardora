@@ -1,5 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import { type Card as CardT, cardLabel, catalogById, type OptionSpec, type CatalogEntry, CATEGORY_LABEL } from '@kuypoker/engine';
+import { useEffect, useState, type ReactNode, type CSSProperties } from 'react';
+import { type Card as CardT, cardLabel, isColorCard, colorCardInfo, colorCardLabel, isDomino, dominoPips, dominoLabel, catalogById, type OptionSpec, type CatalogEntry, CATEGORY_LABEL } from '@kuypoker/engine';
 import { useNet } from '../lib/net';
 import { useAppNotices } from '../lib/store';
 import {
@@ -24,6 +24,9 @@ export function PlayingCard({ card, small, playable, disabled, win, combo, onCli
         <div className="card-back-emblem" aria-hidden="true">♠</div>
       </div>
     );
+  }
+  if (isColorCard(card) || isDomino(card)) {
+    return <TokenCard card={card} small={small} playable={playable} disabled={disabled} win={win} combo={combo} onClick={onClick} style={style} />;
   }
   const label = cardLabel(card);
   const red = card[1] === 'H' || card[1] === 'D';
@@ -55,6 +58,50 @@ export function PlayingCard({ card, small, playable, disabled, win, combo, onCli
   );
   // Kartu interaktif (onClick ATAU prop playable diberikan, mis. kartu tangan) selalu <button>, supaya
   // elemen tidak berganti div↔button saat giliran berubah (itu memicu remount & animasi bagi ulang).
+  return onClick || playable !== undefined
+    ? <button type="button" className={cls} style={style} onClick={onClick} disabled={disabled} aria-disabled={!onClick || undefined} aria-label={label}>{inner}</button>
+    : <div className={cls} style={style} role="img" aria-label={label}>{inner}</div>;
+}
+
+/** Posisi titik domino pada grid 3×3 (indeks 0–8) untuk angka 0–6. */
+const PIP_CELLS: Record<number, number[]> = {
+  0: [], 1: [4], 2: [2, 6], 3: [2, 4, 6], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8],
+};
+
+function DominoHalf({ n }: { n: number }) {
+  return (
+    <div className="dom-half">
+      {Array.from({ length: 9 }, (_, i) => <span key={i} className={PIP_CELLS[n].includes(i) ? 'pip on' : 'pip'} />)}
+    </div>
+  );
+}
+
+const U_SYMBOL: Record<string, string> = { S: '⊘', R: '⇄', D: '+2', W: '★', '4': '+4' };
+
+/** Kartu non-remi: Kartu Warna ("u:…") dan domino ("d:…"). */
+function TokenCard({ card, small, playable, disabled, win, combo, onClick, style }: {
+  card: CardT; small?: boolean; playable?: boolean; disabled?: boolean; win?: boolean; combo?: boolean; onClick?: () => void; style?: CSSProperties;
+}) {
+  let cls: string, label: string, inner: ReactNode;
+  if (isDomino(card)) {
+    const [a, b] = dominoPips(card);
+    label = dominoLabel(card);
+    cls = 'pcard tok-dom';
+    inner = <><DominoHalf n={a} /><span className="dom-line" aria-hidden="true" /><DominoHalf n={b} /></>;
+  } else {
+    const { color, value } = colorCardInfo(card);
+    label = colorCardLabel(card);
+    const sym = U_SYMBOL[value] ?? value;
+    cls = `pcard tok-u u-${color}`;
+    inner = (
+      <>
+        <span className="u-corner tl" aria-hidden="true">{sym}</span>
+        <span className="u-oval" aria-hidden="true"><span className="u-sym">{sym}</span></span>
+        <span className="u-corner br" aria-hidden="true">{sym}</span>
+      </>
+    );
+  }
+  cls += `${small ? ' small' : ''}${playable ? ' playable' : ''}${disabled ? ' disabled' : ''}${win ? ' win' : ''}${combo ? ' combo' : ''}`;
   return onClick || playable !== undefined
     ? <button type="button" className={cls} style={style} onClick={onClick} disabled={disabled} aria-disabled={!onClick || undefined} aria-label={label}>{inner}</button>
     : <div className={cls} style={style} role="img" aria-label={label}>{inner}</div>;

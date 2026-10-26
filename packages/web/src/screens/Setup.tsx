@@ -62,8 +62,9 @@ export default function Setup({ nav, gameId }: { nav: Nav; gameId: string }) {
   if (mod.minPlayers === 1) counts.unshift(1);
   const label = (n: number) => (n === 1 ? 'Solo' : n === 2 ? 'Duo' : n === 3 ? 'Trio' : `${n} Pemain`);
 
-  const isHoldem = gameId === 'holdem';
-  const isTongkrongan = gameId === 'tongkrongan' || gameId === 'capsa-banting';
+  // Varian poker meja Hold'em (Omaha, Short Deck) memakai opsi & preset chip/blind yang sama.
+  const isHoldem = gameId === 'holdem' || gameId === 'omaha' || gameId === 'short-deck';
+  const isTongkrongan = gameId === 'tongkrongan';
   const isBlackjack = gameId === 'blackjack';
   const isCangkulan = gameId === 'cangkulan';
 

@@ -1,37 +1,36 @@
 import { describe, expect, it } from 'vitest';
-import { omahaGame, heartsGame, GAMES, catalogById, seededRng, RuleError } from '../src';
+import { GAMES, CATALOG, catalogById, getGame, seededRng } from '../src';
 import { simulate, seats } from './helpers';
 
-const r = () => seededRng(7);
-
-describe('Game umum (allGames): validasi kartu', () => {
-  it('menolak kartu yang tidak ada di tangan pemain', () => {
-    const s = omahaGame.setup(seats(2), omahaGame.sanitizeOptions({}), r());
-    const notMine = s.hands[1][0];
-    expect(() => omahaGame.apply(s, 0, { type: 'play', cards: [notMine] }, r())).toThrow(RuleError);
-    expect(() => omahaGame.apply(s, 0, { type: 'play', cards: ['AS', 'AH', 'AD', 'AC'].filter(c => !s.hands[0].includes(c)) }, r())).toThrow(RuleError);
+describe('Registry game', () => {
+  it('setiap game "available" di katalog punya modul, dan sebaliknya', () => {
+    for (const g of CATALOG.filter(c => c.status === 'available')) {
+      expect(getGame(g.id), g.id).toBeDefined();
+    }
+    for (const id of Object.keys(GAMES)) expect(catalogById(id)?.status, id).toBe('available');
   });
 
-  it('menolak kartu yang sama dikirim dua kali', () => {
-    const s = omahaGame.setup(seats(2), omahaGame.sanitizeOptions({}), r());
-    const c = s.hands[0][0];
-    expect(() => omahaGame.apply(s, 0, { type: 'play', cards: [c, c] }, r())).toThrow(RuleError);
-  });
-
-  it('kartu sah dibuang dari tangan dan poin bertambah', () => {
-    const s = heartsGame.setup(seats(4), heartsGame.sanitizeOptions({}), r());
-    const c = s.hands[0][0];
-    const s2 = heartsGame.apply(s, 0, { type: 'play', cards: [c] }, r());
-    expect(s2.hands[0]).not.toContain(c);
-    expect(s2.hands[0]).toHaveLength(s.hands[0].length - 1);
-    expect(s2.scores[0]).toBeGreaterThan(0);
-  });
-
-  it('semua game di registry tercatat "available" di katalog dan selesai saat dimainkan bot', () => {
+  it('jumlah pemain modul sesuai katalog', () => {
     for (const [id, game] of Object.entries(GAMES)) {
-      expect(catalogById(id)?.status, id).toBe('available');
-      const s = simulate(game, game.minPlayers, 3);
-      expect(game.isOver(s), id).toBe(true);
+      const c = catalogById(id)!;
+      expect([game.minPlayers, game.maxPlayers], id).toEqual([c.minPlayers, c.maxPlayers]);
     }
   });
+
+  it('view memakai gameId yang sama dengan id modul', () => {
+    for (const [id, game] of Object.entries(GAMES)) {
+      const s = game.setup(seats(game.minPlayers), game.sanitizeOptions({ round: 2, previousWinner: 1, targetRounds: 3, junk: 'x' }), seededRng(1));
+      expect(game.view(s, 0).gameId, id).toBe(game.id);
+    }
+  });
+
+  it('semua game selesai saat dimainkan bot (jumlah pemain minimum & maksimum)', () => {
+    for (const [id, game] of Object.entries(GAMES)) {
+      for (const n of new Set([game.minPlayers, game.maxPlayers])) {
+        const s = simulate(game, n, 3);
+        expect(game.isOver(s), `${id} ${n} pemain`).toBe(true);
+        expect(game.results(s), id).toHaveLength(n);
+      }
+    }
+  }, 120_000);
 });

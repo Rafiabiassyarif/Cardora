@@ -728,6 +728,33 @@ body:has(.table-page) {
   margin-left: calc(var(--card-w) * -0.32);
 }
 
+/* Omaha (4 kartu tangan): kartu dirapatkan agar tetap muat di layar HP. */
+.table-page .cards.hole4 {
+  gap: 0;
+}
+
+.table-page .cards.hole4:not(.overlap)>.pcard+.pcard {
+  margin-left: calc(var(--card-w) * -0.3);
+}
+
+.table-page .cards.overlap.hole4>.pcard:not(.back)+.pcard:not(.back) {
+  margin-left: calc(var(--card-w) * -0.5);
+}
+
+.table-page .cards.overlap.hole4>.pcard.back+.pcard.back {
+  margin-left: calc(var(--card-w) * -0.78);
+}
+
+@media (max-width: 560px) {
+  .table-page .cards.hole4:not(.overlap)>.pcard {
+    --card-w: min(clamp(36px, 10.5vw, 50px), 7vh);
+  }
+
+  .table-page .cards.hole4:not(.overlap)>.pcard+.pcard {
+    margin-left: calc(var(--card-w) * -0.36);
+  }
+}
+
 /* Layar pendek: rim & lengkungan sedikit lebih tipis. */
 @media (max-height: 820px) {
   .table-page .felt {
