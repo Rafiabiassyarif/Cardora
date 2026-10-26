@@ -41,11 +41,27 @@ function Melds({ melds }: { melds?: Card[][] }) {
 
 function Pile({ pile }: { pile: GPile }) {
   const count = pile.count ?? pile.cards.length;
+  // Rantai domino digambar MENDATAR dengan penanda ujung, supaya arah rantai jelas.
+  const isChain = !!pile.chain;
   return (
-    <div className={`gx-pile${pile.highlight ? ' hl' : ''}`}>
+    <div className={`gx-pile${pile.highlight ? ' hl' : ''}${isChain ? ' gx-pile-chain' : ''}`}>
       <span className="gx-pile-label">{pile.label}{pile.count !== undefined ? ` · ${count}` : ''}</span>
       {pile.cards.length === 0 ? (
         <div className="gx-empty">Kosong</div>
+      ) : isChain ? (
+        <div className="gx-chain">
+          <span className="gx-end left" title="Ujung kiri rantai">
+            <i aria-hidden="true">◀</i> {pile.chain!.left}
+          </span>
+          <div className="gx-chain-track">
+            {pile.cards.map((c, k) => (
+              <PlayingCard key={`${k}-${c ?? 'x'}`} card={c} landscape />
+            ))}
+          </div>
+          <span className="gx-end right" title="Ujung kanan rantai">
+            {pile.chain!.right} <i aria-hidden="true">▶</i>
+          </span>
+        </div>
       ) : pile.spread ? (
         <div className="gx-spread">
           {pile.cards.map((c, k) => <PlayingCard key={`${k}-${c ?? 'x'}`} small={pile.cards.length > 5} card={c} />)}

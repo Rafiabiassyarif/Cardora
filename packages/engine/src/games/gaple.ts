@@ -385,6 +385,7 @@ export const gaple: GameModule<GapleState, GenericAction, GenericView, GapleOpti
     const ends = chainEnds(s.chain);
     const piles: GPile[] = [
       { id: 'chain', label: 'Rantai', cards: s.chain.slice(), spread: true, highlight: true,
+        chain: ends ? { left: ends[0], right: ends[1] } : null,
         caption: ends ? `Ujung kiri ${ends[0]} · kanan ${ends[1]}` : 'Belum ada kartu' },
     ];
     if (s.sleeping.length) piles.push({ id: 'sleep', label: 'Kartu Tidur', cards: [null], count: s.sleeping.length });

@@ -13,8 +13,10 @@ import {
   IconX,
 } from './icons';
 
-export function PlayingCard({ card, small, playable, disabled, win, combo, onClick, delay = 0 }: {
+export function PlayingCard({ card, small, playable, disabled, win, combo, onClick, delay = 0, landscape }: {
   card: CardT | null; small?: boolean; playable?: boolean; disabled?: boolean; win?: boolean; combo?: boolean; onClick?: () => void; delay?: number;
+  /** Domino mendatar (rantai di meja). */
+  landscape?: boolean;
 }) {
   const style = delay ? { animationDelay: `${delay}ms` } : undefined;
   if (!card) {
@@ -26,7 +28,7 @@ export function PlayingCard({ card, small, playable, disabled, win, combo, onCli
     );
   }
   if (isColorCard(card) || isDomino(card)) {
-    return <TokenCard card={card} small={small} playable={playable} disabled={disabled} win={win} combo={combo} onClick={onClick} style={style} />;
+    return <TokenCard landscape={landscape} card={card} small={small} playable={playable} disabled={disabled} win={win} combo={combo} onClick={onClick} style={style} />;
   }
   const label = cardLabel(card);
   const red = card[1] === 'H' || card[1] === 'D';
@@ -79,14 +81,16 @@ function DominoHalf({ n }: { n: number }) {
 const U_SYMBOL: Record<string, string> = { S: '⊘', R: '⇄', D: '+2', W: '★', '4': '+4' };
 
 /** Kartu non-remi: Kartu Warna ("u:…") dan domino ("d:…"). */
-function TokenCard({ card, small, playable, disabled, win, combo, onClick, style }: {
+function TokenCard({ card, small, playable, disabled, win, combo, onClick, style, landscape }: {
   card: CardT; small?: boolean; playable?: boolean; disabled?: boolean; win?: boolean; combo?: boolean; onClick?: () => void; style?: CSSProperties;
+  /** Domino mendatar (untuk rantai di meja): dua sisi kiri-kanan, bukan atas-bawah. */
+  landscape?: boolean;
 }) {
   let cls: string, label: string, inner: ReactNode;
   if (isDomino(card)) {
     const [a, b] = dominoPips(card);
     label = dominoLabel(card);
-    cls = 'pcard tok-dom';
+    cls = `pcard tok-dom${landscape ? ' tok-dom-land' : ''}`;
     inner = <><DominoHalf n={a} /><span className="dom-line" aria-hidden="true" /><DominoHalf n={b} /></>;
   } else {
     const { color, value } = colorCardInfo(card);

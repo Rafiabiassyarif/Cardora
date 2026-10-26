@@ -41,6 +41,8 @@ export interface GPile {
   highlight?: boolean;
   /** Teks kecil di bawah tumpukan (mis. pemilik kartu dalam trik). */
   caption?: string;
+  /** Rantai domino: digambar mendatar (bukan tegak) + penanda ujung kiri/kanan. */
+  chain?: { left: number; right: number } | null;
 }
 
 export interface GPlayer {
